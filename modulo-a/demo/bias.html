@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Il bias viene dai dati</title>
+<link rel="stylesheet" href="../comune/demo.css">
+<style>
+  .acc { display: grid; gap: 10px; }
+  .acc .row { display: grid; grid-template-columns: 92px 1fr 58px; align-items: center; gap: 10px; font-size: 14px; }
+  .acc .track { height: 18px; background: var(--surface); border-radius: 9px; overflow: hidden; }
+  .acc .fill { height: 100%; width: 100%; background: var(--fg); transform-origin: 0 50%; transition: transform .5s cubic-bezier(.2,.8,.2,1); }
+  .acc .row.b .fill { background: var(--accent); }
+  .acc .v { font-family: var(--mono); text-align: right; }
+  .msg { font-size: 15px; margin: 0; min-height: 2.9em; }
+  .msg b { color: var(--accent); }
+</style>
+</head>
+<body>
+<main class="demo">
+  <header class="demo-head">
+    <div class="kicker">Demo · Bias dai dati</div>
+    <h1>Il modello impara chi vede</h1>
+    <p>Due gruppi di persone, A (cerchi) e B (triangoli). Per entrambi la risposta giusta dipende dalle stesse due misure, ma nel gruppo B il confine sta in un punto diverso. Il modello impara da un unico insieme di esempi: cosa succede se il gruppo B è <b>raro</b>?</p>
+  </header>
+
+  <section class="stage"><canvas id="cv" aria-label="Esempi di addestramento dei due gruppi e confine imparato dal modello"></canvas></section>
+
+  <section class="panel">
+    <div class="control">
+      <label for="share"><span>Quota del gruppo B negli esempi</span> <output id="shareo"></output></label>
+      <input type="range" id="share" min="2" max="50" step="1" value="5">
+    </div>
+
+    <div class="acc" aria-live="polite">
+      <div class="row"><span>Gruppo A</span><div class="track"><div class="fill" id="fa"></div></div><span class="v" id="va"></span></div>
+      <div class="row b"><span>Gruppo B</span><div class="track"><div class="fill" id="fb"></div></div><span class="v" id="vb"></span></div>
+      <div class="row"><span>In media</span><div class="track"><div class="fill" id="fm"></div></div><span class="v" id="vm"></span></div>
+    </div>
+    <p class="note">Percentuale di risposte giuste su persone nuove, metà del gruppo A e metà del gruppo B.</p>
+    <p class="msg" id="msg"></p>
+
+    <div class="legend">
+      <span><i class="dot" style="background:var(--pos)"></i>risposta giusta: sì</span>
+      <span><i class="dot" style="background:var(--neg)"></i>risposta giusta: no</span>
+      <span>● gruppo A &nbsp;▲ gruppo B</span>
+      <span>linea piena: confine imparato</span>
+      <span style="color:var(--accent)">tratteggio: confine giusto per B</span>
+    </div>
+    <a class="back" href="./">← tutte le demo</a>
+  </section>
+</main>
+
+<script>
+(() => {
+  let seed = 2024;
+  const rng = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const N = 240;
+  // regola vera: gruppo A "sì" se x + y > 1; gruppo B "sì" se x + y > 0.62 (confine spostato)
+  const make = (g, n) => Array.from({ length: n }, () => { const x = rng(), y = rng(); return { x, y, g, t: (x + y > (g === 'A' ? 1 : 0.62)) ? 1 : 0 }; });
+  const poolA = make('A', N), poolB = make('B', N);
+  const testA = make('A', 400), testB = make('B', 400);
+
+  function train(data) {
+    let w1 = 0, w2 = 0, b = 0;
+    const lr = 2.5;
+    for (let it = 0; it < 600; it++) {
+      let g1 = 0, g2 = 0, gb = 0;
+      for (const p of data) {
+        const z = w1 * (p.x - .5) + w2 * (p.y - .5) + b, s = 1 / (1 + Math.exp(-z)), e = s - p.t;
+        g1 += e * (p.x - .5); g2 += e * (p.y - .5); gb += e;
+      }
+      w1 -= lr * g1 / data.length; w2 -= lr * g2 / data.length; b -= lr * gb / data.length;
+    }
+    return { w1, w2, b, pred: p => (w1 * (p.x - .5) + w2 * (p.y - .5) + b) >= 0 ? 1 : 0 };
+  }
+  const acc = (m, pts) => pts.filter(p => m.pred(p) === p.t).length / pts.length;
+
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  let W = 0, H = 0, model = null, data = [];
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    W = cv.parentElement.getBoundingClientRect().width; H = Math.round(Math.min(W * 0.8, window.innerHeight * 0.6));
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
+  }
+  const P = 18;
+  const sx = v => P + v * (W - 2 * P), sy = v => H - P - v * (H - 2 * P);
+  function hexA(hex, a) { const n = parseInt(hex.replace('#', ''), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
+
+  function draw() {
+    if (!W || !model) return;
+    const pos = css('--pos'), neg = css('--neg'), fg = css('--fg');
+    ctx.fillStyle = css('--surface'); ctx.fillRect(0, 0, W, H);
+    const st = 8;
+    for (let px = P; px < W - P; px += st) for (let py = P; py < H - P; py += st) {
+      const p = { x: (px + st / 2 - P) / (W - 2 * P), y: (H - P - py - st / 2) / (H - 2 * P) };
+      ctx.fillStyle = hexA(model.pred(p) ? pos : neg, 0.1); ctx.fillRect(px, py, st, st);
+    }
+    // confine imparato
+    ctx.save(); ctx.beginPath(); ctx.rect(P, P, W - 2 * P, H - 2 * P); ctx.clip();
+    ctx.strokeStyle = fg; ctx.lineWidth = 3; ctx.beginPath();
+    const yAt = x => .5 - (model.w1 * (x - .5) + model.b) / model.w2;
+    ctx.moveTo(sx(-.2), sy(yAt(-.2))); ctx.lineTo(sx(1.2), sy(yAt(1.2))); ctx.stroke();
+    // confine vero del gruppo B, tratteggiato
+    ctx.strokeStyle = css('--accent'); ctx.setLineDash([7, 6]); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(sx(-.2), sy(.82)); ctx.lineTo(sx(1.2), sy(-.58)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+
+    const r = Math.max(5, Math.min(7, W / 90));
+    for (const p of data) {
+      const x = sx(p.x), y = sy(p.y);
+      ctx.fillStyle = p.t ? pos : neg; ctx.globalAlpha = p.g === 'A' ? 0.55 : 1;
+      ctx.beginPath();
+      if (p.g === 'A') ctx.arc(x, y, r * .8, 0, Math.PI * 2);
+      else { ctx.moveTo(x, y - r * 1.4); ctx.lineTo(x + r * 1.25, y + r * .9); ctx.lineTo(x - r * 1.25, y + r * .9); ctx.closePath(); }
+      ctx.fill();
+      if (p.g === 'B') { ctx.globalAlpha = 1; ctx.strokeStyle = fg; ctx.lineWidth = 1.5; ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function update() {
+    const share = parseInt($('share').value, 10) / 100;
+    const nB = Math.max(1, Math.round(N * share)), nA = N - nB;
+    data = poolA.slice(0, nA).concat(poolB.slice(0, nB));
+    model = train(data);
+    const a = acc(model, testA), b = acc(model, testB), m = (a + b) / 2;
+    $('shareo').textContent = `${Math.round(share * 100)}% · ${nB} esempi su ${N}`;
+    [['fa', 'va', a], ['fb', 'vb', b], ['fm', 'vm', m]].forEach(([f, v, x]) => { $(f).style.transform = `scaleX(${x})`; $(v).textContent = Math.round(x * 100) + '%'; });
+    $('msg').innerHTML = b < a - 0.08
+      ? `Il modello ha imparato il confine del gruppo A. Sul gruppo B sbaglia <b>${Math.round((1 - b) * 100)} volte su 100</b>, contro ${Math.round((1 - a) * 100)} sul gruppo A. Nessuno lo ha programmato per discriminare.`
+      : 'Con abbastanza esempi di B il modello trova un compromesso: gli errori si distribuiscono in modo più equo fra i gruppi.';
+    draw();
+  }
+
+  $('share').addEventListener('input', update);
+  new ResizeObserver(resize).observe(cv.parentElement);
+  update();
+})();
+</script>
+</body>
+</html>

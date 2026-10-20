@@ -1,0 +1,1104 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fondamenti di IA — Modulo A</title>
+<link rel="stylesheet" href="../../vendor/reveal/reset.css">
+<link rel="stylesheet" href="../../vendor/reveal/reveal.css">
+<link rel="stylesheet" href="deck.css">
+</head>
+<body>
+<div class="reveal"><div class="slides">
+<section data-state="title">
+<div class="frame bottom">
+  <svg viewBox="0 0 100 100" style="position:absolute;right:0;top:0;width:250px;height:250px" aria-hidden="true">
+    <g fill="none" stroke-width="1.4">
+      <path class="draw" style="--len:60" stroke="var(--line)" d="M25 25L50 35M25 25L50 65M25 50L50 35M25 50L50 65M25 75L50 35M25 75L50 65M60 35L79 50M60 65L79 50"/>
+      <circle class="scale-in" style="--d:.1s" stroke="var(--accent)" cx="20" cy="25" r="5"/><circle class="scale-in" style="--d:.2s" stroke="var(--accent)" cx="20" cy="50" r="5"/><circle class="scale-in" style="--d:.3s" stroke="var(--accent)" cx="20" cy="75" r="5"/>
+      <circle class="scale-in" style="--d:.6s" stroke="var(--accent)" cx="55" cy="35" r="5"/><circle class="scale-in" style="--d:.7s" stroke="var(--accent)" cx="55" cy="65" r="5"/>
+      <circle class="scale-in" style="--d:1.1s" stroke="var(--accent)" fill="var(--accent)" cx="85" cy="50" r="6"/>
+    </g>
+  </svg>
+  <div class="kicker">AI for Future · Modulo A</div>
+  <h1 style="font-size:3.2em;max-width:11em">Fondamenti di <em>Intelligenza Artificiale</em></h1>
+  <p class="lead">Come impara una macchina, e perché a volte impara la cosa sbagliata</p>
+  <div style="margin-top:1.4em;padding-top:.8em;border-top:1px solid var(--line);display:flex;gap:2.2em;font-size:.62em;color:var(--muted)">
+    <span><b style="color:var(--fg)">Giacomo Nunziati</b></span><span>Santa Chiara Lab · Università di Siena</span><span>21 ottobre 2026</span>
+  </div>
+</div>
+<aside class="notes">Benvenuti. Tasto S per queste note, F per lo schermo intero, Esc per la panoramica.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Chi sono</div>
+  <div class="cols wide-right" style="align-items:start">
+    <div>
+      <h2>Giacomo<br>Nunziati</h2>
+      <p class="lead" style="font-size:.9em">Ingegnere, dottore di ricerca in Smart Computing. Costruisco sistemi che <b>vedono</b>: per l'industria, per la clinica, per la ricerca.</p>
+    </div>
+    <div><div class="fragment rise" style="display:grid;grid-template-columns:150px 1fr;gap:20px;padding:12px 0;border-top:1px solid var(--line)"><span class="mono accent" style="font-size:.62em;padding-top:.3em">2016–2020</span><div><div style="font-size:.78em;font-weight:600">Laurea in Ingegneria Informatica</div><div class="small">Università di Siena</div></div></div><div class="fragment rise" style="display:grid;grid-template-columns:150px 1fr;gap:20px;padding:12px 0;border-top:1px solid var(--line)"><span class="mono accent" style="font-size:.62em;padding-top:.3em">2020–2022</span><div><div style="font-size:.78em;font-weight:600">Laurea magistrale in Artificial Intelligence and Automation Engineering</div><div class="small">Università di Siena</div></div></div><div class="fragment rise" style="display:grid;grid-template-columns:150px 1fr;gap:20px;padding:12px 0;border-top:1px solid var(--line)"><span class="mono accent" style="font-size:.62em;padding-top:.3em">2022–2026</span><div><div style="font-size:.78em;font-weight:600">Dottorato in Smart Computing</div><div class="small">Università di Firenze</div></div></div><div class="fragment rise" style="display:grid;grid-template-columns:150px 1fr;gap:20px;padding:12px 0;border-top:1px solid var(--line)"><span class="mono accent" style="font-size:.62em;padding-top:.3em">2024</span><div><div style="font-size:.78em;font-weight:600">Visiting researcher</div><div class="small">Radboud University Medical Center, Nijmegen</div></div></div><div class="fragment rise" style="display:grid;grid-template-columns:150px 1fr;gap:20px;padding:12px 0;border-top:1px solid var(--line)"><span class="mono accent" style="font-size:.62em;padding-top:.3em">2025–2026</span><div><div style="font-size:.78em;font-weight:600">Research fellow, progetto CARES</div><div class="small">Università di Siena con Nuovo Pignone / Baker Hughes</div></div></div></div>
+  </div>
+</div>
+<aside class="notes">Breve: il percorso serve a dire "faccio questo di mestiere, e lo vedrete nei casi di oggi pomeriggio".</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Chi sono · cosa faccio oggi</div>
+  <h2>Tre progetti, che ritroverete oggi pomeriggio</h2>
+  <div class="cols three" style="margin-top:.4em">
+    <div class="card fragment rise"><h3>Ispezione industriale</h3><p>Robot che cercano perdite di gas negli impianti, con visione artificiale 2D e 3D. Progetto CARES con Nuovo Pignone.</p></div>
+    <div class="card fragment rise"><h3>Sanità</h3><p>Un sistema di eye tracking che usano ortottisti e oculisti per i test dei movimenti oculari. Dalla telecamera al software in clinica.</p></div>
+    <div class="card fragment rise"><h3>Proteine</h3><p>Quanto è "sepolto" ogni atomo di una proteina, e cosa ci dice sugli effetti di una mutazione (SADIC).</p></div>
+  </div>
+  <p class="fragment rise small" style="margin-top:1.4em;font-size:.68em">E poi: insegno programmazione e IA in corsi per aziende e per la formazione professionale, e sono cofondatore di Studialibero, un'associazione di tutoraggio gratuito contro la dispersione scolastica.</p>
+</div>
+</section>
+<section>
+<div class="frame center">
+  <div class="kicker">E voi?</div>
+  <h2 style="font-size:2.3em">Tre domande, alzata di mano</h2>
+  <ol class="steps" style="font-size:1.05em">
+    <li class="fragment rise">Che corso di laurea o dottorato fate?</li>
+    <li class="fragment rise">Avete mai usato un'IA <b>stamattina</b>?</li>
+    <li class="fragment rise">Avete mai <b>addestrato</b> un modello?</li>
+  </ol>
+</div>
+<aside class="notes">Annota due o tre corsi di laurea presenti: citali negli esempi più avanti. Alla domanda 2 quasi tutti dicono di no: è la domanda della slide dopo.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Oggi</div>
+  <h2>Il programma</h2>
+  <div style="margin-top:.2em"><div class="fragment rise" style="display:grid;grid-template-columns:120px 1fr;gap:24px;padding:14px 0;border-top:1px solid var(--line)"><span class="mono accent" style="font-size:.7em;padding-top:.25em">9:00</span><div><b>Dalle regole agli esempi</b> <span class="muted" style="font-size:.78em">· cos'è l'IA, da dove viene, il nuovo paradigma</span></div></div><div class="fragment rise" style="display:grid;grid-template-columns:120px 1fr;gap:24px;padding:14px 0;border-top:1px solid var(--line)"><span class="mono accent" style="font-size:.7em;padding-top:.25em">11:00</span><div><b>Come impara una macchina</b> <span class="muted" style="font-size:.78em">· dati, feature, il neurone, il percettrone</span></div></div><div class="fragment rise" style="display:grid;grid-template-columns:120px 1fr;gap:24px;padding:14px 0;border-top:1px solid var(--line)"><span class="mono accent" style="font-size:.7em;padding-top:.25em">14:00</span><div><b>Dal neurone alla rete profonda</b> <span class="muted" style="font-size:.78em">· reti, discesa del gradiente, overfitting, rinforzo</span></div></div><div class="fragment rise" style="display:grid;grid-template-columns:120px 1fr;gap:24px;padding:14px 0;border-top:1px solid var(--line)"><span class="mono accent" style="font-size:.7em;padding-top:.25em">16:00</span><div><b>L'IA nel mondo reale</b> <span class="muted" style="font-size:.78em">· casi veri: successi, scorciatoie, bias, regole</span></div></div><div class="fragment rise" style="display:grid;grid-template-columns:120px 1fr;gap:24px;padding:14px 0;border-top:1px solid var(--line)"><span class="mono accent" style="font-size:.7em;padding-top:.25em">17:30</span><div><b>Chiusura</b> <span class="muted" style="font-size:.78em">· cosa portarsi a casa, verso il modulo B</span></div></div></div>
+  <p class="small" style="margin-top:1em">Pause alle 10:45 e alle 15:45 · pranzo 13:00–14:00 · le demo si aprono dal telefono</p>
+</div>
+</section>
+<section class="divider" data-background-color="#1A1A1A">
+<div class="frame">
+  <div class="kicker">Blocco 1 · 9:15–10:45</div>
+  <h1 style="font-size:3em">Dalle regole<br>agli esempi</h1>
+  <p class="lead">Per settant'anni abbiamo dato ai computer delle regole. Poi abbiamo cominciato a dargli degli esempi.</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">L'IA intorno a noi</div>
+  <h2>Quante di queste avete usato oggi?</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:.3em"><div class="card fragment pop"><h3 style="font-size:.95em">Sblocco con il volto</h3><p>riconosce voi, non una foto</p></div><div class="card fragment pop"><h3 style="font-size:.95em">Feed e suggerimenti</h3><p>cosa vi mostra, e in che ordine</p></div><div class="card fragment pop"><h3 style="font-size:.95em">Filtro antispam</h3><p>decide cosa non vedrete</p></div><div class="card fragment pop"><h3 style="font-size:.95em">Traduttore</h3><p>da una lingua all'altra</p></div><div class="card fragment pop"><h3 style="font-size:.95em">Navigatore</h3><p>quanto traffico ci sarà fra 20 minuti</p></div><div class="card fragment pop"><h3 style="font-size:.95em">Sottotitoli automatici</h3><p>dalla voce al testo</p></div></div>
+  <p class="fragment rise" style="margin-top:1.1em">Quasi tutte <b>riconoscono, classificano o prevedono</b>. Non generano niente. È l'IA di cui parliamo oggi.</p>
+</div>
+<aside class="notes">L'IA generativa (chatbot, immagini) è il modulo B. Oggi: l'IA che decide, riconosce, prevede, e che usiamo da anni senza accorgercene.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Tre parole che si confondono</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 640 560" aria-label="Insiemi annidati: intelligenza artificiale, machine learning, deep learning">
+      <circle class="scale-in" style="--d:.1s" cx="320" cy="290" r="260" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/>
+      <circle class="scale-in" style="--d:.7s" cx="320" cy="350" r="185" fill="#F3DCCF"/>
+      <circle class="scale-in" style="--d:1.3s" cx="320" cy="405" r="110" fill="var(--accent)"/>
+      <text class="appear" style="--d:.4s" x="320" y="88" text-anchor="middle" font-size="30" font-weight="600">Intelligenza artificiale</text>
+      <text class="appear" style="--d:1s" x="320" y="215" text-anchor="middle" font-size="28" font-weight="600">Machine learning</text>
+      <text class="appear" style="--d:1.6s" x="320" y="412" text-anchor="middle" font-size="27" font-weight="600" fill="#fff">Deep learning</text>
+    </svg>
+    <div class="stack" style="font-size:.85em">
+      <div class="fragment rise"><b>IA</b> · l'obiettivo: macchine che fanno cose che chiameremmo "intelligenti". Anche con regole scritte a mano.</div>
+      <div class="fragment rise"><b>Machine learning</b> · un metodo: la macchina <span class="accent">impara dai dati</span> invece di seguire regole scritte da noi.</div>
+      <div class="fragment rise"><b>Deep learning</b> · un tipo di machine learning: <span class="accent">reti neurali</span> con molti strati.</div>
+    </div>
+  </div>
+</div>
+<aside class="notes">Esempio da tenere: Deep Blue (1997) batte Kasparov ed è IA, ma non impara: regole e calcolo. AlphaGo (2016) impara. Ci torniamo nella linea del tempo.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Prima dei computer</div>
+  <div class="cols wide-right">
+    <div>
+      <h2>"Computer" era un mestiere</h2>
+      <p>Fino agli anni '50, il <b>computer</b> era una persona: faceva calcoli a mano, seguendo istruzioni precise, per ore.</p>
+      <p class="fragment rise muted" style="font-size:.85em">In foto: la sala calcolo del NACA (oggi NASA) a Edwards, California, 1949. Le "computer" elaboravano i dati dei voli sperimentali.</p>
+    </div>
+    <div class="figure"><img class="photo" src="img/computer-umani.jpg" alt="Donne al lavoro come computer umani in una sala calcolo del NACA, 1949"><span class="credit">NASA · pubblico dominio</span></div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">1936 · Alan Turing</div>
+  <div class="cols wide-left" style="align-items:start">
+    <div>
+      <h2>Carta, matita<br>e un elenco di regole</h2>
+      <p style="font-size:.85em">Turing immagina la macchina più semplice possibile: un nastro, una testina che legge e scrive un simbolo, e una <b>tabella di regole</b>.</p>
+      <svg class="diagram" viewBox="0 0 640 170" style="height:150px;margin-top:.2em" aria-label="Nastro della macchina di Turing che scorre sotto la testina">
+        <defs><clipPath id="tapeclip"><rect x="0" y="40" width="640" height="80"/></clipPath></defs>
+        <g clip-path="url(#tapeclip)"><g transform="translate(0,50)"><g class="tape"><g transform="translate(0,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">1</text></g><g transform="translate(60,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">1</text></g><g transform="translate(120,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">0</text></g><g transform="translate(180,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">1</text></g><g transform="translate(240,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">0</text></g><g transform="translate(300,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">0</text></g><g transform="translate(360,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">1</text></g><g transform="translate(420,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">1</text></g><g transform="translate(480,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">0</text></g><g transform="translate(540,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">1</text></g><g transform="translate(600,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">0</text></g><g transform="translate(660,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">1</text></g><g transform="translate(720,0)"><rect width="56" height="56" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="28" y="38" text-anchor="middle" class="mono" font-size="26">1</text></g></g></g></g>
+        <path d="M282 10 L338 10 L310 44 Z" fill="var(--accent)"/>
+        <rect x="278" y="46" width="64" height="64" rx="8" fill="none" stroke="var(--accent)" stroke-width="4"/>
+        <text x="310" y="160" text-anchor="middle" class="muted" font-size="20">leggi il simbolo · scrivi · sposta il nastro · cambia stato</text>
+      </svg>
+      <div class="quote fragment rise" style="font-size:.8em;margin-top:.3em">«Il computer umano deve seguire regole fisse; non ha alcuna autorità per discostarsene in nessun dettaglio.»</div>
+      <div class="who fragment rise">Alan Turing, 1950</div>
+    </div>
+    <div class="figure" style="height:480px"><img class="photo" src="img/turing.jpg" alt="Alan Turing a 16 anni"><span class="credit">Turing a 16 anni · pubblico dominio</span></div>
+  </div>
+</div>
+<aside class="notes">Tesi di Church-Turing in una frase: tutto ciò che si calcola seguendo un procedimento meccanico si può calcolare con questa macchina. Il punto per noi: un computer esegue regole. Tutto sta in chi le scrive.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Algoritmo</div>
+  <div class="cols wide-right">
+    <div>
+      <h2>Un algoritmo è una ricetta</h2>
+      <p>Ingredienti (input) → passi precisi, finiti, non ambigui → biscotti (output).</p>
+      <ol style="font-size:.78em;margin-top:.6em">
+        <li class="fragment rise">Se le parole hanno lunghezza diversa, sono diverse.</li>
+        <li class="fragment rise">Altrimenti confrontale lettera per lettera.</li>
+        <li class="fragment rise">Alla prima lettera diversa: sono diverse.</li>
+        <li class="fragment rise">Se arrivi in fondo: sono uguali.</li>
+      </ol>
+    </div>
+    <svg class="diagram" viewBox="0 0 400 280" aria-label="Confronto lettera per lettera tra CASA e CASO"><g transform="translate(40,20)"><rect width="64" height="64" rx="8" fill="var(--surface)"/><text x="32" y="44" text-anchor="middle" font-size="32" font-weight="600">C</text><rect y="84" width="64" height="64" rx="8" fill="var(--surface)"/><text x="32" y="128" text-anchor="middle" font-size="32" font-weight="600">C</text><rect class="appear" style="--d:0.6s" x="-4" y="-4" width="72" height="156" rx="10" fill="none" stroke="var(--fg)" stroke-width="4"/><text class="appear" style="--d:0.8s" x="32" y="186" text-anchor="middle" font-size="28" fill="var(--ok)">=</text></g><g transform="translate(120,20)"><rect width="64" height="64" rx="8" fill="var(--surface)"/><text x="32" y="44" text-anchor="middle" font-size="32" font-weight="600">A</text><rect y="84" width="64" height="64" rx="8" fill="var(--surface)"/><text x="32" y="128" text-anchor="middle" font-size="32" font-weight="600">A</text><rect class="appear" style="--d:1.3s" x="-4" y="-4" width="72" height="156" rx="10" fill="none" stroke="var(--fg)" stroke-width="4"/><text class="appear" style="--d:1.5s" x="32" y="186" text-anchor="middle" font-size="28" fill="var(--ok)">=</text></g><g transform="translate(200,20)"><rect width="64" height="64" rx="8" fill="var(--surface)"/><text x="32" y="44" text-anchor="middle" font-size="32" font-weight="600">S</text><rect y="84" width="64" height="64" rx="8" fill="var(--surface)"/><text x="32" y="128" text-anchor="middle" font-size="32" font-weight="600">S</text><rect class="appear" style="--d:2.0s" x="-4" y="-4" width="72" height="156" rx="10" fill="none" stroke="var(--fg)" stroke-width="4"/><text class="appear" style="--d:2.2s" x="32" y="186" text-anchor="middle" font-size="28" fill="var(--ok)">=</text></g><g transform="translate(280,20)"><rect width="64" height="64" rx="8" fill="var(--surface)"/><text x="32" y="44" text-anchor="middle" font-size="32" font-weight="600">A</text><rect y="84" width="64" height="64" rx="8" fill="var(--surface)"/><text x="32" y="128" text-anchor="middle" font-size="32" font-weight="600">O</text><rect class="appear" style="--d:2.7s" x="-4" y="-4" width="72" height="156" rx="10" fill="none" stroke="var(--accent)" stroke-width="4"/><text class="appear" style="--d:2.9s" x="32" y="186" text-anchor="middle" font-size="28" fill="var(--accent)">≠</text></g><text class="appear" style="--d:3.3s" x="312" y="256" text-anchor="middle" font-size="30" font-weight="600" fill="var(--accent)">diverse!</text></svg>
+  </div>
+</div>
+<aside class="notes">Funziona benissimo quando sappiamo scrivere i passi. La prossima slide: quando non sappiamo scriverli.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Il muro delle regole</div>
+  <h2>Scrivete le regole per riconoscere un 7</h2>
+  <svg class="diagram" viewBox="0 0 620 140" style="height:150px;width:640px" aria-label="Cinque modi diversi di scrivere il numero sette"><g transform="translate(20,10)"><rect width="90" height="116" rx="10" fill="var(--surface)"/><path d="M10 14 L70 14 L34 96" transform="translate(5,6)" stroke="var(--fg)" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" class="draw" style="--len:200;--d:0.0s"/></g><g transform="translate(140,10)"><rect width="90" height="116" rx="10" fill="var(--surface)"/><path d="M12 18 Q40 8 72 16 L30 98 M28 56 L60 56" transform="translate(5,6)" stroke="var(--fg)" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" class="draw" style="--len:200;--d:0.3s"/></g><g transform="translate(260,10)"><rect width="90" height="116" rx="10" fill="var(--surface)"/><path d="M18 12 L66 20 L50 60 L38 98" transform="translate(5,6)" stroke="var(--fg)" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" class="draw" style="--len:200;--d:0.6s"/></g><g transform="translate(380,10)"><rect width="90" height="116" rx="10" fill="var(--surface)"/><path d="M8 26 Q20 10 46 16 Q66 20 70 14 Q52 50 44 100" transform="translate(5,6)" stroke="var(--fg)" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" class="draw" style="--len:200;--d:0.9s"/></g><g transform="translate(500,10)"><rect width="90" height="116" rx="10" fill="var(--surface)"/><path d="M14 16 L68 16 Q60 30 52 52 Q44 76 40 98 M30 58 L62 54" transform="translate(5,6)" stroke="var(--fg)" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" class="draw" style="--len:200;--d:1.2s"/></g></svg>
+  <div class="cols" style="align-items:start;margin-top:.5em">
+    <ul style="font-size:.82em">
+      <li class="fragment rise">Una linea orizzontale in alto, poi una diagonale verso sinistra…</li>
+      <li class="fragment rise">…ma a volte c'è il trattino in mezzo.</li>
+      <li class="fragment rise">…e se la linea in alto è storta? E se è curva?</li>
+      <li class="fragment rise">…e se è scritto più piccolo, più grosso, più chiaro?</li>
+    </ul>
+    <div class="fragment rise card" style="align-self:center"><h3>E un gatto?</h3><p>In una foto qualsiasi: di lato, al buio, mezzo nascosto dal divano. Ogni regola che scrivete ha dieci eccezioni.</p></div>
+  </div>
+</div>
+<aside class="notes">Fate proporre una regola alla classe, poi trovate insieme il controesempio. È il motivo per cui la visione artificiale "a regole" non ha mai funzionato davvero.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Il paradosso di Moravec</div>
+  <h2>Facile per noi, difficile per la macchina<br>(e viceversa)</h2>
+  <div class="cols" style="align-items:start;margin-top:.3em">
+    <div class="card"><h3>Facile per un computer</h3><p style="font-size:.95em;line-height:1.6">moltiplicare numeri di 20 cifre<br>giocare a scacchi con regole e calcolo<br>ricordare un milione di righe</p></div>
+    <div class="card hot"><h3>Difficile per un computer (fino a poco fa)</h3><p style="font-size:.95em;line-height:1.6">riconoscere un volto<br>capire una frase detta in fretta<br>camminare su un terreno sconnesso</p></div>
+  </div>
+  <p class="fragment rise" style="margin-top:1em">Le cose che facciamo senza pensarci sono il frutto di milioni di anni di evoluzione. <b>Nessuno sa scriverne le regole.</b></p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Proviamo · 10 minuti</div>
+  <h2>Una rete indovina i vostri disegni</h2>
+  <div style="display:grid;grid-template-columns:170px 1fr 1.25fr;gap:32px;align-items:center" class="grow">
+<div><img src="qr/quickdraw.svg" alt="QR code" style="width:170px;height:170px;background:#fff;padding:6px;border-radius:10px;box-sizing:border-box"><div class="mono" style="font-size:13px;color:var(--muted);margin-top:6px;word-break:break-all">quickdraw.withgoogle.com</div></div>
+<div><h3>Quick, Draw!</h3><ol class="steps" style="font-size:.78em"><li>Inquadrate il QR (o cercate <b>Quick Draw</b>)</li><li>Disegnate quello che vi chiede, in 20 secondi</li><li>Guardate quando indovina, e quando no</li></ol></div>
+<div class="figure" style="height:400px"><img class="photo contain" src="img/ext-quickdraw.jpg" alt="Schermata di Quick, Draw!"></div></div>
+  <p class="fragment rise" style="margin-top:.4em;font-size:.85em">Nessuno ha scritto la regola del gatto. La rete ha visto <b>più di 50 milioni</b> di disegni fatti da persone come voi.</p>
+</div>
+<aside class="notes">Lasciateli giocare 5–6 minuti. Poi: quando ha sbagliato? Cosa avete disegnato di strano? Nessuno ha scritto regole: ha visto esempi. Il dataset pubblico è di circa 50 milioni di disegni in 345 categorie.</aside>
+</section>
+<section data-auto-animate>
+<div class="frame"><div class="kicker">Il cambio di paradigma</div><h2 data-id="ttl">Programmazione classica</h2></div>
+<div data-id="box-a" style="position:absolute;left:60px;top:200px;width:230px;padding:22px 0;border-radius:14px;background:var(--surface);text-align:center;font-weight:600">Regole</div>
+<div data-id="box-b" style="position:absolute;left:60px;top:330px;width:230px;padding:22px 0;border-radius:14px;background:var(--surface);text-align:center;font-weight:600">Dati</div>
+<div data-id="box-m" style="position:absolute;left:470px;top:250px;width:260px;padding:40px 0;border-radius:14px;background:var(--fg);color:#fff;text-align:center;font-weight:600;font-size:1.1em">Programma</div>
+<div data-id="box-o" style="position:absolute;left:880px;top:268px;width:230px;padding:22px 0;border-radius:14px;border:3px solid var(--accent);text-align:center;font-weight:600">Risposte</div>
+<div data-id="arr1" style="position:absolute;left:300px;top:282px;font-size:1.6em;color:var(--muted)">→</div>
+<div data-id="arr2" style="position:absolute;left:770px;top:282px;font-size:1.6em;color:var(--muted)">→</div>
+<p data-id="cap" style="position:absolute;left:80px;bottom:60px;max-width:900px" class="muted">Noi scriviamo le regole. La macchina le applica ai dati e produce le risposte.</p>
+</section>
+<section data-auto-animate>
+<div class="frame"><div class="kicker">Il cambio di paradigma</div><h2 data-id="ttl">Machine learning</h2></div>
+<div data-id="box-a" style="position:absolute;left:60px;top:200px;width:230px;padding:22px 0;border-radius:14px;background:var(--surface);text-align:center;font-weight:600">Dati</div>
+<div data-id="box-b" style="position:absolute;left:60px;top:330px;width:230px;padding:22px 0;border-radius:14px;background:var(--surface);text-align:center;font-weight:600">Risposte giuste</div>
+<div data-id="box-m" style="position:absolute;left:470px;top:250px;width:260px;padding:40px 0;border-radius:14px;background:var(--accent);color:#fff;text-align:center;font-weight:600;font-size:1.1em">Apprendimento</div>
+<div data-id="box-o" style="position:absolute;left:880px;top:268px;width:230px;padding:22px 0;border-radius:14px;border:3px solid var(--accent);text-align:center;font-weight:600">Regole</div>
+<div data-id="arr1" style="position:absolute;left:300px;top:282px;font-size:1.6em;color:var(--muted)">→</div>
+<div data-id="arr2" style="position:absolute;left:770px;top:282px;font-size:1.6em;color:var(--muted)">→</div>
+<p data-id="cap" style="position:absolute;left:80px;bottom:60px;max-width:900px">Noi diamo <b>esempi con la risposta giusta</b>. La macchina ricava da sola le regole, e poi le usa su dati nuovi.</p>
+<aside class="notes">È la slide più importante della mattina. Tornateci durante il giorno: ogni volta che un modello sbaglia, chiedetevi da quali esempi ha ricavato le sue regole.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Ottant'anni in una riga</div>
+  <h2>Entusiasmo, inverno, entusiasmo</h2>
+  <svg class="diagram grow" viewBox="0 0 1160 560" aria-label="Linea del tempo dell'IA dal 1943 al 2016"><line x1="40" x2="1120" y1="300" y2="300" stroke="var(--fg)" stroke-width="3"/><rect x="600" y="270" width="75" height="60" fill="var(--line)" opacity=".7"/><text x="630" y="355" text-anchor="middle" class="muted" font-size="16">inverno</text><rect x="728" y="270" width="81" height="60" fill="var(--line)" opacity=".7"/><text x="768" y="355" text-anchor="middle" class="muted" font-size="16">inverno</text><g class="fragment rise"><circle cx="70" cy="300" r="10" fill="var(--fg)"/><line x1="70" x2="70" y1="288" y2="240" stroke="var(--line)" stroke-width="2"/><text x="70" y="84" text-anchor="middle" font-size="28" font-weight="700" class="">1943</text><text x="70" y="114" text-anchor="middle" font-size="19" class="muted"><tspan x="70" dy="0">McCulloch e</tspan><tspan x="70" dy="22">Pitts: il neurone</tspan><tspan x="70" dy="22">come calcolo</tspan><tspan x="70" dy="22">logico</tspan></text></g><g class="fragment rise"><circle cx="197" cy="300" r="10" fill="var(--fg)"/><line x1="197" x2="197" y1="312" y2="360" stroke="var(--line)" stroke-width="2"/><text x="197" y="410" text-anchor="middle" font-size="28" font-weight="700" class="">1950</text><text x="197" y="440" text-anchor="middle" font-size="19" class="muted"><tspan x="197" dy="0">Turing: "le</tspan><tspan x="197" dy="22">macchine possono</tspan><tspan x="197" dy="22">pensare?"</tspan></text></g><g class="fragment rise"><circle cx="324" cy="300" r="10" fill="var(--fg)"/><line x1="324" x2="324" y1="288" y2="240" stroke="var(--line)" stroke-width="2"/><text x="324" y="84" text-anchor="middle" font-size="28" font-weight="700" class="">1956</text><text x="324" y="114" text-anchor="middle" font-size="19" class="muted"><tspan x="324" dy="0">Dartmouth: nasce</tspan><tspan x="324" dy="22">il nome</tspan><tspan x="324" dy="22">"intelligenza</tspan><tspan x="324" dy="22">artificiale"</tspan></text></g><g class="fragment rise"><circle cx="451" cy="300" r="10" fill="var(--accent)"/><line x1="451" x2="451" y1="312" y2="360" stroke="var(--line)" stroke-width="2"/><text x="451" y="410" text-anchor="middle" font-size="28" font-weight="700" class="acc">1958</text><text x="451" y="440" text-anchor="middle" font-size="19" class="muted"><tspan x="451" dy="0">Rosenblatt: il</tspan><tspan x="451" dy="22">percettrone</tspan><tspan x="451" dy="22">impara</tspan></text></g><g class="fragment rise"><circle cx="578" cy="300" r="10" fill="var(--fg)"/><line x1="578" x2="578" y1="288" y2="240" stroke="var(--line)" stroke-width="2"/><text x="578" y="84" text-anchor="middle" font-size="28" font-weight="700" class="">1969</text><text x="578" y="114" text-anchor="middle" font-size="19" class="muted"><tspan x="578" dy="0">Minsky e Papert:</tspan><tspan x="578" dy="22">i limiti del</tspan><tspan x="578" dy="22">percettrone.</tspan><tspan x="578" dy="22">Primo inverno</tspan></text></g><g class="fragment rise"><circle cx="705" cy="300" r="10" fill="var(--fg)"/><line x1="705" x2="705" y1="312" y2="360" stroke="var(--line)" stroke-width="2"/><text x="705" y="410" text-anchor="middle" font-size="28" font-weight="700" class="">1986</text><text x="705" y="440" text-anchor="middle" font-size="19" class="muted"><tspan x="705" dy="0">Backpropagation:</tspan><tspan x="705" dy="22">si addestrano</tspan><tspan x="705" dy="22">reti a più strati</tspan></text></g><g class="fragment rise"><circle cx="832" cy="300" r="10" fill="var(--fg)"/><line x1="832" x2="832" y1="288" y2="240" stroke="var(--line)" stroke-width="2"/><text x="832" y="84" text-anchor="middle" font-size="28" font-weight="700" class="">1997</text><text x="832" y="114" text-anchor="middle" font-size="19" class="muted"><tspan x="832" dy="0">Deep Blue batte</tspan><tspan x="832" dy="22">Kasparov a</tspan><tspan x="832" dy="22">scacchi (senza</tspan><tspan x="832" dy="22">imparare)</tspan></text></g><g class="fragment rise"><circle cx="959" cy="300" r="10" fill="var(--accent)"/><line x1="959" x2="959" y1="312" y2="360" stroke="var(--line)" stroke-width="2"/><text x="959" y="410" text-anchor="middle" font-size="28" font-weight="700" class="acc">2012</text><text x="959" y="440" text-anchor="middle" font-size="19" class="muted"><tspan x="959" dy="0">AlexNet: il deep</tspan><tspan x="959" dy="22">learning vince la</tspan><tspan x="959" dy="22">gara ImageNet</tspan></text></g><g class="fragment rise"><circle cx="1086" cy="300" r="10" fill="var(--accent)"/><line x1="1086" x2="1086" y1="288" y2="240" stroke="var(--line)" stroke-width="2"/><text x="1086" y="106" text-anchor="middle" font-size="28" font-weight="700" class="acc">2016</text><text x="1086" y="136" text-anchor="middle" font-size="19" class="muted"><tspan x="1086" dy="0">AlphaGo batte Lee</tspan><tspan x="1086" dy="22">Sedol a Go</tspan><tspan x="1086" dy="22">(imparando)</tspan></text></g></svg>
+</div>
+<aside class="notes">Due inverni: dopo il 1969 (il percettrone non basta) e alla fine degli anni '80 (promesse non mantenute dei sistemi esperti). Deep Blue: regole scritte da esperti + forza bruta, circa 200 milioni di posizioni al secondo. AlphaGo: imparato. Aggancio: "il percettrone del 1958 lo costruiamo dopo la pausa".</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Due vittorie diverse</div>
+  <div class="cols" style="align-items:stretch">
+    <div class="card"><div class="mono small">1997 · scacchi</div><h3 style="font-size:1.5em;margin-top:.3em">Deep Blue</h3><p style="font-size:.85em;line-height:1.5">Regole e valutazioni scritte da grandi maestri e programmatori. Calcola circa 200 milioni di posizioni al secondo. <b>Non impara.</b></p></div>
+    <div class="card hot fragment rise"><div class="mono" style="font-size:.5em;opacity:.8">2016 · Go</div><h3 style="font-size:1.5em;margin-top:.3em">AlphaGo</h3><p style="font-size:.85em;line-height:1.5">Nel Go le mosse possibili sono troppe per calcolarle tutte. Ha imparato da milioni di partite, umane e contro sé stesso. Lo ritroviamo oggi pomeriggio.</p></div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame center">
+  <div class="kicker">Fine del blocco 1</div>
+  <h2 style="font-size:2.2em">Domande?</h2>
+  <p class="lead">Poi pausa fino alle <b>11:00</b>.</p>
+</div>
+</section>
+<section class="divider" data-background-color="#1A1A1A">
+<div class="frame">
+  <div class="kicker">Blocco 2 · 11:00–13:00</div>
+  <h1 style="font-size:3em">Come impara<br>una macchina</h1>
+  <p class="lead">Esempi, numeri, un neurone finto e una regola per correggersi.</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Apprendimento supervisionato</div>
+  <h2>Tanti esempi, ognuno con la risposta giusta</h2>
+  <div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:16px 10px;align-items:center;font-size:.85em;margin-top:.3em">
+    <div class="card fragment rise">una foto</div><div class="fragment rise accent" style="text-align:center;font-size:1.4em">→</div><div class="card fragment rise"><b>"gatto"</b></div>
+    <div class="card fragment rise">una email</div><div class="fragment rise accent" style="text-align:center;font-size:1.4em">→</div><div class="card fragment rise"><b>"spam"</b></div>
+    <div class="card fragment rise">una radiografia</div><div class="fragment rise accent" style="text-align:center;font-size:1.4em">→</div><div class="card fragment rise"><b>"frattura: sì"</b></div>
+    <div class="card fragment rise">un appartamento: 80 m², centro, 3° piano</div><div class="fragment rise accent" style="text-align:center;font-size:1.4em">→</div><div class="card fragment rise"><b>240.000 €</b></div>
+  </div>
+  <p class="fragment rise" style="margin-top:1em;font-size:.85em">Risposta fra poche categorie: <b>classificazione</b>. Risposta numerica: <b>regressione</b>.</p>
+</div>
+<aside class="notes">Lo "studente" vede domanda e soluzione, migliaia di volte. Chi mette le etichette? Spesso persone pagate per farlo: il costo vero di molti progetti.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Feature</div>
+  <h2>Dalle cose ai numeri</h2>
+  <div style="display:grid;grid-template-columns:300px 360px 1fr;gap:30px;align-items:center" class="grow">
+    <svg class="diagram" viewBox="0 0 300 300" aria-label="Un piatto con le misure di diametro e altezza">
+      <ellipse cx="150" cy="150" rx="120" ry="34" fill="var(--surface)" stroke="var(--fg)" stroke-width="3"/>
+      <ellipse cx="150" cy="142" rx="70" ry="16" fill="none" stroke="var(--line)" stroke-width="2"/>
+      <path d="M30 220 L270 220" stroke="var(--accent)" stroke-width="3"/><path d="M30 212 L30 228 M270 212 L270 228" stroke="var(--accent)" stroke-width="3"/>
+      <text x="150" y="252" text-anchor="middle" class="acc" font-size="22">diametro 22,4 cm</text>
+      <path d="M285 128 L285 172" stroke="var(--accent)" stroke-width="3"/>
+      <text x="296" y="100" text-anchor="end" class="acc" font-size="22">altezza 4,3 cm</text>
+    </svg>
+    <div class="fragment rise">
+      <table style="border-collapse:collapse;font-size:.7em;width:100%">
+        <tr style="color:var(--muted)"><td style="padding:8px">diametro</td><td>altezza</td><td>cos'è</td></tr>
+        <tr style="background:var(--surface);font-weight:600"><td style="padding:8px">22,4</td><td>4,3</td><td>piatto</td></tr>
+        <tr><td style="padding:8px">6,9</td><td>26,6</td><td>bottiglia</td></tr>
+        <tr><td style="padding:8px">…</td><td>…</td><td>…</td></tr>
+      </table>
+      <p class="small" style="margin-top:.6em">Ogni colonna è una <b>feature</b>: una proprietà misurabile.</p>
+    </div>
+    <svg class="diagram fragment rise" viewBox="0 0 600 560" aria-label="Il piatto diventa un punto nel piano">
+      <line x1="70" y1="500" x2="560" y2="500" class="stroke" stroke-width="2"/><line x1="70" y1="500" x2="70" y2="40" class="stroke" stroke-width="2"/><text x="560" y="535" text-anchor="end" class="muted" font-size="20">diametro (cm) →</text><text x="58" y="40" text-anchor="end" class="muted" font-size="20" transform="rotate(-90 58 40)">altezza (cm) →</text>
+      <circle cx="406" cy="435" r="12" fill="var(--neg)"/>
+      <text x="406" y="411" text-anchor="middle" font-size="20">il nostro piatto</text>
+      <rect x="162" y="89" width="24" height="24" fill="var(--pos)"/>
+    </svg>
+  </div>
+</div>
+<aside class="notes">Le feature le sceglie chi progetta il sistema. Se scegliete male (per esempio il colore per distinguere piatti e bottiglie), il modello è cieco qualunque cosa faccia dopo.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Il dataset</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 600 560" aria-label="Venti oggetti nel piano diametro-altezza"><line x1="70" y1="500" x2="560" y2="500" class="stroke" stroke-width="2"/><line x1="70" y1="500" x2="70" y2="40" class="stroke" stroke-width="2"/><text x="560" y="535" text-anchor="end" class="muted" font-size="20">diametro (cm) →</text><text x="58" y="40" text-anchor="end" class="muted" font-size="20" transform="rotate(-90 58 40)">altezza (cm) →</text><circle cx="322.4" cy="426.4" r="9" fill="var(--neg)" class="scale-in"/><circle cx="406.4" cy="435.1" r="9" fill="var(--neg)" class="scale-in"/><circle cx="302.8" cy="427.7" r="9" fill="var(--neg)" class="scale-in"/><circle cx="499.6" cy="429.8" r="9" fill="var(--neg)" class="scale-in"/><circle cx="353.2" cy="443.1" r="9" fill="var(--neg)" class="scale-in"/><circle cx="444.1" cy="428.4" r="9" fill="var(--neg)" class="scale-in"/><circle cx="365.2" cy="465.9" r="9" fill="var(--neg)" class="scale-in"/><circle cx="412.0" cy="461.1" r="9" fill="var(--neg)" class="scale-in"/><circle cx="418.0" cy="467.9" r="9" fill="var(--neg)" class="scale-in"/><circle cx="336.6" cy="455.3" r="9" fill="var(--neg)" class="scale-in"/><rect x="165.1" y="92.3" width="18" height="18" fill="var(--pos)" class="scale-in"/><rect x="156.4" y="221.3" width="18" height="18" fill="var(--pos)" class="scale-in"/><rect x="198.1" y="264.8" width="18" height="18" fill="var(--pos)" class="scale-in"/><rect x="162.7" y="82.6" width="18" height="18" fill="var(--pos)" class="scale-in"/><rect x="157.0" y="107.0" width="18" height="18" fill="var(--pos)" class="scale-in"/><rect x="176.7" y="101.9" width="18" height="18" fill="var(--pos)" class="scale-in"/><rect x="146.5" y="92.4" width="18" height="18" fill="var(--pos)" class="scale-in"/><rect x="196.2" y="249.4" width="18" height="18" fill="var(--pos)" class="scale-in"/><rect x="141.6" y="185.3" width="18" height="18" fill="var(--pos)" class="scale-in"/><rect x="209.9" y="239.9" width="18" height="18" fill="var(--pos)" class="scale-in"/><circle cx="380" cy="60" r="9" fill="var(--neg)"/><text x="398" y="67" font-size="20">piatto</text><rect x="371" y="82" width="18" height="18" fill="var(--pos)"/><text x="398" y="98" font-size="20">bottiglia</text></svg>
+    <div>
+      <h2>Venti oggetti,<br>venti punti</h2>
+      <p>I piatti stanno in basso a destra, le bottiglie in alto a sinistra.</p>
+      <p class="fragment rise">Imparare a distinguerli vuol dire trovare un <b>confine</b> fra le due nuvole.</p>
+    </div>
+  </div>
+</div>
+</section>
+<section data-auto-animate>
+<div class="frame"><div class="kicker">Training e test</div><h2 data-id="tt">Tutti gli esempi che abbiamo</h2></div>
+<div data-id="d0" style="position:absolute;left:330px;top:150px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d1" style="position:absolute;left:440px;top:150px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d2" style="position:absolute;left:550px;top:150px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d3" style="position:absolute;left:660px;top:150px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d4" style="position:absolute;left:770px;top:150px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d5" style="position:absolute;left:330px;top:250px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d6" style="position:absolute;left:440px;top:250px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d7" style="position:absolute;left:550px;top:250px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d8" style="position:absolute;left:660px;top:250px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d9" style="position:absolute;left:770px;top:250px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d10" style="position:absolute;left:330px;top:350px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d11" style="position:absolute;left:440px;top:350px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d12" style="position:absolute;left:550px;top:350px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d13" style="position:absolute;left:660px;top:350px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d14" style="position:absolute;left:770px;top:350px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d15" style="position:absolute;left:330px;top:450px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d16" style="position:absolute;left:440px;top:450px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d17" style="position:absolute;left:550px;top:450px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d18" style="position:absolute;left:660px;top:450px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d19" style="position:absolute;left:770px;top:450px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div>
+</section>
+<section data-auto-animate>
+<div class="frame"><div class="kicker">Training e test</div><h2 data-id="tt">Si studia su una parte, l'esame è sul resto</h2></div>
+<div data-id="d0" style="position:absolute;left:120px;top:150px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d1" style="position:absolute;left:220px;top:150px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d2" style="position:absolute;left:320px;top:150px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d3" style="position:absolute;left:860px;top:170px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d4" style="position:absolute;left:420px;top:150px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d5" style="position:absolute;left:520px;top:150px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d6" style="position:absolute;left:120px;top:250px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d7" style="position:absolute;left:950px;top:170px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d8" style="position:absolute;left:220px;top:250px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d9" style="position:absolute;left:860px;top:270px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d10" style="position:absolute;left:320px;top:250px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d11" style="position:absolute;left:420px;top:250px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d12" style="position:absolute;left:950px;top:270px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d13" style="position:absolute;left:520px;top:250px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d14" style="position:absolute;left:120px;top:350px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d15" style="position:absolute;left:860px;top:370px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d16" style="position:absolute;left:220px;top:350px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d17" style="position:absolute;left:320px;top:350px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div><div data-id="d18" style="position:absolute;left:420px;top:350px;width:44px;height:44px;background:var(--neg);border-radius:50%"></div><div data-id="d19" style="position:absolute;left:520px;top:350px;width:44px;height:44px;background:var(--pos);border-radius:4px"></div>
+<div style="position:absolute;left:120px;top:470px;font-weight:600">Training: il modello impara da qui</div>
+<div style="position:absolute;left:820px;top:470px;font-weight:600;color:var(--accent)">Test: mai visti</div>
+<p style="position:absolute;left:80px;bottom:56px;max-width:1000px" class="muted">Se l'esame fosse sugli stessi esercizi studiati, il voto non direbbe niente su quanto lo studente ha capito.</p>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">L'ispirazione</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 720 420" aria-label="Neurone biologico con un impulso che viaggia dai dendriti all'assone">
+      <g stroke="var(--fg)" stroke-width="4" fill="none" stroke-linecap="round">
+        <path d="M60 80 Q120 130 170 180"/><path d="M40 210 Q110 205 165 210"/><path d="M60 340 Q120 290 172 240"/>
+        <path d="M95 105 L70 70 M120 140 L90 145 M95 316 L68 344 M118 280 L86 276"/>
+      </g>
+      <circle cx="210" cy="210" r="52" fill="var(--surface)" stroke="var(--fg)" stroke-width="4"/>
+      <circle cx="210" cy="210" r="17" fill="var(--accent-2)"/>
+      <path d="M262 210 L560 210" stroke="var(--fg)" stroke-width="8"/>
+      <g fill="var(--line)"><rect x="300" y="200" width="50" height="20" rx="10"/><rect x="370" y="200" width="50" height="20" rx="10"/><rect x="440" y="200" width="50" height="20" rx="10"/></g>
+      <g stroke="var(--fg)" stroke-width="4" fill="none" stroke-linecap="round"><path d="M560 210 L640 160 M560 210 L650 210 M560 210 L640 262"/></g>
+      <g fill="var(--accent)"><circle cx="646" cy="157" r="9"/><circle cx="656" cy="210" r="9"/><circle cx="646" cy="265" r="9"/></g>
+      <circle r="10" class="bio-pulse" style="offset-path:path('M60 80 Q120 130 170 180 L210 210 L560 210 L650 210')"/>
+      <circle r="10" class="bio-pulse" style="--d:1.1s;offset-path:path('M60 340 Q120 290 172 240 L210 210 L560 210 L640 262')"/>
+      <g font-size="22" class="muted"><text x="40" y="40">dendriti: ricevono</text><text x="160" y="300">corpo: somma</text><text x="320" y="180">assone: trasmette</text><text x="560" y="320">sinapsi</text></g>
+    </svg>
+    <div class="stack" style="font-size:.82em">
+      <div><b>Circa 86 miliardi</b> di neuroni, ognuno collegato a migliaia di altri.</div>
+      <div class="fragment rise">Il neurone <b>somma</b> i segnali che riceve. Sopra una <b>soglia</b> "spara" un impulso, tutto o niente.</div>
+      <div class="fragment rise">Imparare cambia <b>quanto contano</b> le connessioni. Hebb (1949), in uno slogan: <i>neuroni che si attivano insieme si collegano</i>.</div>
+    </div>
+  </div>
+</div>
+<aside class="notes">È una metafora, non una copia. Un neurone artificiale è enormemente più semplice di uno vero: prendiamo solo l'idea di somma, soglia e connessioni che si rafforzano.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">1943 · McCulloch e Pitts</div>
+  <div class="cols wide-right">
+    <div>
+      <h2>Il neurone artificiale</h2>
+      <p>Ogni ingresso arriva con un <b>peso</b>: quanto conta. Il neurone li somma e si accende solo se la somma supera la <b>soglia</b>.</p>
+      <div class="fragment rise mono" style="font-size:.62em;background:var(--surface);padding:14px 18px;border-radius:10px;margin-top:.6em">uscita = 1 se w₁·x₁ + w₂·x₂ + w₃·x₃ ≥ soglia<br>uscita = 0 altrimenti</div>
+    </div>
+    <svg class="diagram" viewBox="0 0 520 380" aria-label="Animazione di un neurone artificiale">
+      <path class="stroke" style="stroke:var(--line)" d="M70 70 L250 190" stroke-width="12"/>
+      <path class="stroke" style="stroke:var(--line)" d="M70 190 L250 190" stroke-width="4"/>
+      <path class="stroke" style="stroke:var(--line)" d="M70 310 L250 190" stroke-width="8"/>
+      <path class="nn-pulse" d="M70 70 L250 190" stroke-width="12"/>
+      <path class="nn-pulse" d="M70 190 L250 190" stroke-width="4"/>
+      <path class="nn-pulse" d="M70 310 L250 190" stroke-width="8"/>
+      <g class="mono muted" font-size="17"><text x="138" y="108">w₁ = 0,9</text><text x="138" y="180">w₂ = 0,2</text><text x="138" y="286">w₃ = 0,6</text></g>
+      <g font-size="22"><circle cx="55" cy="70" r="26" fill="var(--surface)" stroke="var(--fg)" stroke-width="2"/><text x="55" y="78" text-anchor="middle">x₁</text>
+      <circle cx="55" cy="190" r="26" fill="var(--surface)" stroke="var(--fg)" stroke-width="2"/><text x="55" y="198" text-anchor="middle">x₂</text>
+      <circle cx="55" cy="310" r="26" fill="var(--surface)" stroke="var(--fg)" stroke-width="2"/><text x="55" y="318" text-anchor="middle">x₃</text></g>
+      <rect x="244" y="124" width="90" height="132" rx="18" fill="var(--surface)" stroke="var(--fg)" stroke-width="2"/>
+      <rect x="268" y="140" width="42" height="100" rx="5" fill="var(--bg)" stroke="var(--line)"/>
+      <rect class="nn-gauge" x="268" y="140" width="42" height="100" rx="5"/>
+      <line x1="256" x2="322" y1="172" y2="172" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 4"/>
+      <text x="340" y="177" class="mono acc" font-size="15">soglia</text>
+      <text x="289" y="285" text-anchor="middle" font-size="24">Σ</text>
+      <path d="M334 190 L450 190" stroke="var(--line)" stroke-width="4"/>
+      <path class="nn-emit" d="M334 190 L450 190"/>
+      <circle class="nn-out" cx="472" cy="190" r="24"/>
+      <text x="472" y="244" text-anchor="middle" class="muted" font-size="18">uscita</text>
+    </svg>
+  </div>
+</div>
+<aside class="notes">Lo spessore delle frecce è il peso. L'indicatore si riempie con la somma; se supera la linea tratteggiata, il neurone si accende.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Con i numeri veri</div>
+  <h2>Piatto o bottiglia?</h2>
+  <p class="muted" style="font-size:.8em">Pesi scelti da noi: w<sub>D</sub> = −1 per il diametro, w<sub>A</sub> = +1 per l'altezza, soglia 0. Bottiglia se il punteggio è ≥ 0.</p>
+  <div class="cols" style="align-items:start;margin-top:.4em;font-size:.85em">
+    <div class="card fragment rise"><h3>Un piatto: 22,4 × 4,3</h3><p class="mono" style="font-size:.9em;color:var(--fg)">−1 · 22,4 + 1 · 4,3 = <b class="accent">−18,1</b></p><p style="margin-top:.5em">Sotto la soglia → <b style="color:var(--fg)">piatto</b> ✓</p></div>
+    <div class="card fragment rise"><h3>Una bottiglia: 6,9 × 26,6</h3><p class="mono" style="font-size:.9em;color:var(--fg)">−1 · 6,9 + 1 · 26,6 = <b class="accent">+19,7</b></p><p style="margin-top:.5em">Sopra la soglia → <b style="color:var(--fg)">bottiglia</b> ✓</p></div>
+  </div>
+  <p class="fragment rise" style="margin-top:1em">Tutto il "sapere" del neurone sta in <b>tre numeri</b>: due pesi e una soglia. E chi li ha scelti?</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">La geometria del neurone</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 600 560" aria-label="Retta di decisione che ruota al variare dei pesi">
+      <defs><clipPath id="plotclip"><rect x="70" y="40" width="490" height="460"/></clipPath></defs>
+      <line x1="70" y1="500" x2="560" y2="500" class="stroke" stroke-width="2"/><line x1="70" y1="500" x2="70" y2="40" class="stroke" stroke-width="2"/><text x="560" y="535" text-anchor="end" class="muted" font-size="20">diametro (cm) →</text><text x="58" y="40" text-anchor="end" class="muted" font-size="20" transform="rotate(-90 58 40)">altezza (cm) →</text><circle cx="322.4" cy="426.4" r="9" fill="var(--neg)" class=""/><circle cx="406.4" cy="435.1" r="9" fill="var(--neg)" class=""/><circle cx="302.8" cy="427.7" r="9" fill="var(--neg)" class=""/><circle cx="499.6" cy="429.8" r="9" fill="var(--neg)" class=""/><circle cx="353.2" cy="443.1" r="9" fill="var(--neg)" class=""/><circle cx="444.1" cy="428.4" r="9" fill="var(--neg)" class=""/><circle cx="365.2" cy="465.9" r="9" fill="var(--neg)" class=""/><circle cx="412.0" cy="461.1" r="9" fill="var(--neg)" class=""/><circle cx="418.0" cy="467.9" r="9" fill="var(--neg)" class=""/><circle cx="336.6" cy="455.3" r="9" fill="var(--neg)" class=""/><rect x="165.1" y="92.3" width="18" height="18" fill="var(--pos)" class=""/><rect x="156.4" y="221.3" width="18" height="18" fill="var(--pos)" class=""/><rect x="198.1" y="264.8" width="18" height="18" fill="var(--pos)" class=""/><rect x="162.7" y="82.6" width="18" height="18" fill="var(--pos)" class=""/><rect x="157.0" y="107.0" width="18" height="18" fill="var(--pos)" class=""/><rect x="176.7" y="101.9" width="18" height="18" fill="var(--pos)" class=""/><rect x="146.5" y="92.4" width="18" height="18" fill="var(--pos)" class=""/><rect x="196.2" y="249.4" width="18" height="18" fill="var(--pos)" class=""/><rect x="141.6" y="185.3" width="18" height="18" fill="var(--pos)" class=""/><rect x="209.9" y="239.9" width="18" height="18" fill="var(--pos)" class=""/>
+      <g clip-path="url(#plotclip)"><g class="rotor" style="transform-origin:258px 312px"><line x1="-80" y1="650" x2="670" y2="-100" stroke="var(--fg)" stroke-width="5"/></g></g>
+    </svg>
+    <div>
+      <h2>I pesi disegnano<br>una retta</h2>
+      <p>Da una parte il neurone dice "bottiglia", dall'altra "piatto".</p>
+      <p class="fragment rise">Cambiare i pesi = <b>ruotare</b> la retta. Cambiare la soglia = <b>spostarla</b>.</p>
+      <p class="fragment rise muted">Un neurone da solo sa fare solo questo: tagliare il piano in due.</p>
+    </div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">1958 · Frank Rosenblatt</div>
+  <div style="display:grid;grid-template-columns:240px 1fr 1fr;gap:36px;align-items:center" class="grow">
+    <div class="figure" style="height:320px"><img class="photo" src="img/rosenblatt.jpg" alt="Frank Rosenblatt"><span class="credit">CC BY-SA 4.0</span></div>
+    <div>
+      <h2>Il percettrone:<br>i pesi li trova lui</h2>
+      <p style="font-size:.85em">Una macchina vera, il Mark I: una "retina" di 400 fotocellule collegate a neuroni elettrici. I pesi erano manopole girate da motori.</p>
+      <div class="quote fragment rise" style="font-size:.85em;margin-top:.6em">«L'embrione di un computer elettronico che la Marina si aspetta sappia camminare, parlare, vedere, scrivere, riprodursi ed essere consapevole della propria esistenza.»</div>
+      <div class="who fragment rise">New York Times, 8 luglio 1958</div>
+    </div>
+    <div class="figure" style="height:440px"><img class="photo contain" src="img/mark1.jpg" alt="Schema del Mark I Perceptron dal manuale operativo"><span class="credit">manuale del Mark I · pubblico dominio</span></div>
+  </div>
+</div>
+<aside class="notes">Rosenblatt era uno psicologo. Il clamore fu enorme: nota l'aspettativa del 1958, e confrontala con quello che una retta può fare davvero.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">La regola del percettrone</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 600 560" aria-label="Un punto classificato male fa ruotare la retta">
+      <line x1="70" y1="500" x2="560" y2="500" class="stroke" stroke-width="2"/><line x1="70" y1="500" x2="70" y2="40" class="stroke" stroke-width="2"/><text x="560" y="535" text-anchor="end" class="muted" font-size="20">diametro (cm) →</text><text x="58" y="40" text-anchor="end" class="muted" font-size="20" transform="rotate(-90 58 40)">altezza (cm) →</text><circle cx="322.4" cy="426.4" r="9" fill="var(--neg)" class=""/><circle cx="406.4" cy="435.1" r="9" fill="var(--neg)" class=""/><circle cx="302.8" cy="427.7" r="9" fill="var(--neg)" class=""/><circle cx="499.6" cy="429.8" r="9" fill="var(--neg)" class=""/><circle cx="353.2" cy="443.1" r="9" fill="var(--neg)" class=""/><circle cx="444.1" cy="428.4" r="9" fill="var(--neg)" class=""/><circle cx="365.2" cy="465.9" r="9" fill="var(--neg)" class=""/><circle cx="412.0" cy="461.1" r="9" fill="var(--neg)" class=""/><circle cx="418.0" cy="467.9" r="9" fill="var(--neg)" class=""/><circle cx="336.6" cy="455.3" r="9" fill="var(--neg)" class=""/><rect x="165.1" y="92.3" width="18" height="18" fill="var(--pos)" class=""/><rect x="156.4" y="221.3" width="18" height="18" fill="var(--pos)" class=""/><rect x="198.1" y="264.8" width="18" height="18" fill="var(--pos)" class=""/><rect x="162.7" y="82.6" width="18" height="18" fill="var(--pos)" class=""/><rect x="157.0" y="107.0" width="18" height="18" fill="var(--pos)" class=""/><rect x="176.7" y="101.9" width="18" height="18" fill="var(--pos)" class=""/><rect x="146.5" y="92.4" width="18" height="18" fill="var(--pos)" class=""/><rect x="196.2" y="249.4" width="18" height="18" fill="var(--pos)" class=""/><rect x="141.6" y="185.3" width="18" height="18" fill="var(--pos)" class=""/><rect x="209.9" y="239.9" width="18" height="18" fill="var(--pos)" class=""/>
+      <g clip-path="url(#plotclip2)"><g class="rotor" style="transform-origin:280px 350px;animation-duration:3s"><line x1="-80" y1="590" x2="670" y2="50" stroke="var(--fg)" stroke-width="5"/></g></g>
+      <defs><clipPath id="plotclip2"><rect x="70" y="40" width="490" height="460"/></clipPath></defs>
+      <circle cx="207" cy="274" r="22" fill="none" stroke="var(--accent)" stroke-width="4"/>
+    </svg>
+    <div>
+      <h2>Se sbagli,<br>correggiti un poco</h2>
+      <ol class="steps" style="font-size:.85em">
+        <li class="fragment rise">Prendi un esempio e calcola la risposta.</li>
+        <li class="fragment rise">Se è giusta, non fare niente.</li>
+        <li class="fragment rise">Se è sbagliata, sposta un poco i pesi verso la risposta giusta.</li>
+        <li class="fragment rise">Ripeti, finché non sbagli più.</li>
+      </ol>
+      <p class="fragment rise muted" style="font-size:.8em">Se una retta che separa le classi esiste, Rosenblatt dimostrò che il percettrone la trova.</p>
+    </div>
+  </div>
+</div>
+<aside class="notes">Teorema di convergenza del percettrone: se i dati sono separabili da una retta, l'algoritmo termina. "Un poco" è il learning rate: lo ritroviamo nel pomeriggio.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Tocca a voi · 25 minuti</div>
+  <h2>Sii tu il percettrone</h2>
+  <div class="qr"><div><img src="qr/percettrone.svg" alt="QR code"><div class="url">nunziati.github.io/corso-ai-santa-chiara-lab-2026/modulo-a/demo/percettrone.html</div></div>
+<div><h3>Dal telefono</h3><ol class="steps"><li>Muovete i cursori: separate piatti e bottiglie <b>a mano</b>. Quanti errori?</li><li>Premete <b>Impara da solo</b> e guardate la retta che si sposta</li><li>Aggiungete un punto «strano» e vedete cosa succede</li></ol></div></div>
+</div>
+<aside class="notes">Chi ci è riuscito a mano? In quanti tentativi? L'algoritmo ci mette pochi passi. Poi: aggiungere una bottiglia in mezzo ai piatti rende il problema non separabile e l'algoritmo non si ferma più. Ottimo aggancio per lo XOR.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Il limite</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 600 500" aria-label="Problema XOR: nessuna retta separa i quattro punti">
+      <rect x="60" y="40" width="480" height="420" rx="16" fill="var(--surface)"/>
+      <defs><clipPath id="xorclip"><rect x="60" y="40" width="480" height="420" rx="16"/></clipPath></defs>
+      <g clip-path="url(#xorclip)"><g class="rotor-fail" style="transform-origin:300px 250px"><line x1="-100" y1="250" x2="700" y2="250" stroke="var(--fg)" stroke-width="5"/></g></g>
+      <rect x="140" y="100" width="40" height="40" fill="var(--pos)"/><rect x="420" y="360" width="40" height="40" fill="var(--pos)"/><circle cx="160" cy="380" r="21" fill="var(--neg)"/><circle cx="440" cy="120" r="21" fill="var(--neg)"/>
+    </svg>
+    <div>
+      <h2>Lo XOR:<br>nessuna retta basta</h2>
+      <p style="font-size:.85em">Quadrati in due angoli opposti, cerchi negli altri due. Provate a separarli con una sola retta.</p>
+      <p class="fragment rise" style="font-size:.85em">1969: Minsky e Papert dimostrano i limiti del percettrone. I finanziamenti spariscono: è il <b>primo inverno dell'IA</b>.</p>
+      <p class="fragment rise accent"><b>Come si risolve? Lo vediamo dopo pranzo.</b></p>
+    </div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame center">
+  <div class="kicker">La mattina in cinque parole</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-top:.2em">
+    <div class="card fragment pop"><h3>Esempi</h3><p>con la risposta giusta</p></div>
+    <div class="card fragment pop"><h3>Feature</h3><p>le cose diventano numeri</p></div>
+    <div class="card fragment pop"><h3>Pesi</h3><p>quanto conta ogni numero</p></div>
+    <div class="card fragment pop"><h3>Soglia</h3><p>quando decidere "sì"</p></div>
+    <div class="card hot fragment pop"><h3>Errore</h3><p>da cui si impara</p></div>
+  </div>
+  <p class="lead" style="margin-top:1.4em">Pranzo. Si riprende alle <b>14:00</b>.</p>
+</div>
+</section>
+<section class="divider" data-background-color="#1A1A1A">
+<div class="frame">
+  <div class="kicker">Blocco 3 · 14:00–15:45</div>
+  <h1 style="font-size:3em">Dal neurone<br>alla rete profonda</h1>
+  <p class="lead">Più neuroni, più strati, e un modo per addestrarli tutti insieme.</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Più neuroni, più rette</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 600 500" aria-label="Due rette risolvono lo XOR">
+      <rect x="60" y="40" width="480" height="420" rx="16" fill="var(--surface)"/>
+      <path class="fragment" data-fragment-index="2" d="M60 40 L60 40 L540 460 Z" fill="none"/>
+      <polygon class="fragment" data-fragment-index="2" points="60,160 60,40 180,40 540,340 540,460 420,460" fill="var(--pos)" opacity=".15"/>
+      <line class="fragment" data-fragment-index="0" x1="60" y1="160" x2="420" y2="460" stroke="var(--fg)" stroke-width="5"/>
+      <line class="fragment" data-fragment-index="1" x1="180" y1="40" x2="540" y2="340" stroke="var(--accent)" stroke-width="5"/>
+      <rect x="140" y="100" width="40" height="40" fill="var(--pos)"/><rect x="420" y="360" width="40" height="40" fill="var(--pos)"/><circle cx="160" cy="380" r="21" fill="var(--neg)"/><circle cx="440" cy="120" r="21" fill="var(--neg)"/>
+    </svg>
+    <div>
+      <h2>Due neuroni,<br>poi un terzo</h2>
+      <p class="fragment rise" data-fragment-index="0">Il primo neurone traccia una retta.</p>
+      <p class="fragment rise" data-fragment-index="1">Il secondo ne traccia un'altra.</p>
+      <p class="fragment rise" data-fragment-index="2">Un terzo neurone guarda le loro risposte e dice: "quadrato se sei <b>fra</b> le due rette".</p>
+      <p class="fragment rise muted">Questa è una rete neurale a due strati.</p>
+    </div>
+  </div>
+</div>
+</section>
+<section data-js="polar">
+<div class="frame">
+  <div class="kicker">Cosa fa uno strato</div>
+  <h2>Uno strato cambia il punto di vista</h2>
+  <svg data-polar class="diagram grow" viewBox="0 0 1000 520" aria-label="Due anelli concentrici vengono srotolati in due bande separabili"></svg>
+</div>
+<aside class="notes">Due anelli uno dentro l'altro: nessuna retta li separa. Se cambiamo coordinate (distanza dal centro e angolo, invece di x e y), diventano due bande: ora basta una retta. Gli strati di una rete imparano da soli trasformazioni di questo tipo, molto più complicate.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Come si addestra una rete</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 640 440" aria-label="Pallina che scende lungo la curva dell'errore">
+      <path d="M30 60 C 120 380, 260 420, 330 400 S 560 300, 620 80" stroke="var(--fg)" stroke-width="5" fill="none"/>
+      <line x1="30" y1="420" x2="620" y2="420" stroke="var(--line)" stroke-width="2"/>
+      <text x="610" y="410" text-anchor="end" class="muted" font-size="20">valore dei pesi →</text>
+      <text x="40" y="40" class="muted" font-size="20">errore ↑</text>
+      <circle r="16" class="ball" style="--t:3.2s;offset-path:path('M48 92 C 120 360, 230 405, 330 386')"/>
+      <circle cx="330" cy="399" r="6" fill="var(--ok)"/>
+    </svg>
+    <div>
+      <h2>Imparare è<br>scendere a valle</h2>
+      <p style="font-size:.9em">Per ogni scelta dei pesi la rete fa un certo <b>errore</b> sugli esempi. Immaginatelo come un'altitudine.</p>
+      <p class="fragment rise">Al buio, sentite solo la <b>pendenza</b> sotto i piedi. Fate un passo in discesa. Poi un altro.</p>
+      <p class="fragment rise muted">È la <b>discesa del gradiente</b>. Con milioni di pesi, milioni di dimensioni: stessa idea.</p>
+    </div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Quanto lungo il passo?</div>
+  <h2>Il learning rate</h2>
+  <div class="cols three grow" style="align-items:stretch">
+    <div class="card"><svg viewBox="0 0 300 200" style="width:100%"><path d="M20 30 Q150 330 280 30" stroke="var(--fg)" stroke-width="4" fill="none"/><circle r="11" class="ball" style="--t:7s;offset-path:path('M30 50 Q90 160 140 175')"/></svg><h3>Troppo piccolo</h3><p>Scende sicura, ma ci mette un'eternità.</p></div>
+    <div class="card"><svg viewBox="0 0 300 200" style="width:100%"><path d="M20 30 Q150 330 280 30" stroke="var(--fg)" stroke-width="4" fill="none"/><circle r="11" class="ball" style="--t:1.6s;offset-path:path('M30 50 Q90 160 150 172')"/></svg><h3>Giusto</h3><p>Arriva in fondo in pochi passi.</p></div>
+    <div class="card hot"><svg viewBox="0 0 300 200" style="width:100%"><path d="M20 30 Q150 330 280 30" stroke="#fff" stroke-width="4" fill="none"/><circle r="11" fill="#fff" class="ball" style="--t:2.6s;offset-path:path('M30 50 L268 52 L36 70 L258 78 L50 96 L246 104')"/></svg><h3>Troppo grande</h3><p>Scavalca il fondo, rimbalza, e a volte esplode.</p></div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Backpropagation, 1986</div>
+  <div class="cols wide-right">
+    <div>
+      <h2>Di chi è la colpa?</h2>
+      <p>L'errore si misura all'uscita. Ma i pesi da correggere sono dappertutto.</p>
+      <p class="fragment rise">La backpropagation <b>ripartisce l'errore all'indietro</b>, strato per strato: ogni peso riceve la sua parte di colpa e si corregge di conseguenza.</p>
+    </div>
+    <svg class="diagram" viewBox="0 0 620 420" aria-label="Rete neurale con segnali in avanti e correzioni all'indietro">
+      <g stroke-width="3">
+        <path class="fwd" d="M80 90 L300 120 M80 210 L300 120 M80 330 L300 120 M80 90 L300 300 M80 210 L300 300 M80 330 L300 300 M300 120 L520 210 M300 300 L520 210"/>
+        <path class="bwd fragment" d="M80 90 L300 120 M80 210 L300 120 M80 330 L300 120 M80 90 L300 300 M80 210 L300 300 M80 330 L300 300 M300 120 L520 210 M300 300 L520 210"/>
+      </g>
+      <g fill="var(--surface)" stroke="var(--fg)" stroke-width="3"><circle cx="80" cy="90" r="26"/><circle cx="80" cy="210" r="26"/><circle cx="80" cy="330" r="26"/><circle cx="300" cy="120" r="28"/><circle cx="300" cy="300" r="28"/><circle cx="520" cy="210" r="30"/></g>
+      <text x="520" y="290" text-anchor="middle" font-size="22" class="acc">errore</text>
+      <text x="80" y="400" text-anchor="middle" class="muted" font-size="18">ingressi</text><text x="300" y="400" text-anchor="middle" class="muted" font-size="18">strato nascosto</text><text x="520" y="400" text-anchor="middle" class="muted" font-size="18">uscita</text>
+    </svg>
+  </div>
+</div>
+<aside class="notes">Rumelhart, Hinton, Williams (1986). Niente derivate: "ogni peso sa di quanto ha contribuito all'errore e si sposta di conseguenza". Premio Turing 2018 a Hinton, LeCun, Bengio.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Dal telefono · 5 minuti</div>
+  <h2>Scendete voi a valle</h2>
+  <div class="qr"><div><img src="qr/gradiente.svg" alt="QR code"><div class="url">nunziati.github.io/corso-ai-santa-chiara-lab-2026/modulo-a/demo/gradiente.html</div></div>
+<div><h3>La pallina e il learning rate</h3><ol class="steps"><li>Premete <b>Avvia</b> con il learning rate di partenza</li><li>Provate 0,1 · 0,8 · 1,8 · 2,1</li><li>Passate a <b>due valli</b>: dove si ferma?</li></ol></div></div>
+</div>
+<aside class="notes">Con due valli la pallina si ferma nella prima valle che incontra: un minimo locale. Le reti grandi, in pratica, soffrono meno di questo problema di quanto si temesse.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Proviamo · 20 minuti</div>
+  <h2>Costruite una rete neurale</h2>
+  <div style="display:grid;grid-template-columns:170px 1fr 1.25fr;gap:32px;align-items:center" class="grow">
+<div><img src="qr/playground.svg" alt="QR code" style="width:170px;height:170px;background:#fff;padding:6px;border-radius:10px;box-sizing:border-box"><div class="mono" style="font-size:13px;color:var(--muted);margin-top:6px;word-break:break-all">playground.tensorflow.org</div></div>
+<div><h3>TensorFlow Playground</h3><ol class="steps" style="font-size:.78em"><li>Dataset <b>cerchio</b>, nessuno strato nascosto: ci riesce?</li><li>Aggiungete uno strato con 4 neuroni</li><li>Dataset <b>spirale</b>: quanti strati servono?</li></ol></div>
+<div class="figure" style="height:400px"><img class="photo contain" src="img/ext-playground.jpg" alt="Schermata di TensorFlow Playground con il dataset a spirale"></div></div>
+</div>
+<aside class="notes">Proiettalo e lascia che lo provino dal telefono. Fai notare la "test loss" in alto a destra che scende, e le immagini dentro i neuroni: ogni neurone ha imparato una sua "retta" o una sua forma.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Il "deep" del deep learning</div>
+  <h2>Strato dopo strato, concetti sempre più astratti</h2>
+  <svg class="diagram grow" viewBox="0 0 1120 360" aria-label="Gerarchia di feature: bordi, forme, parti, oggetti">
+    <g class="fragment rise"><rect x="0" y="40" width="240" height="220" rx="14" fill="var(--surface)"/>
+      <g stroke="var(--fg)" stroke-width="5" stroke-linecap="round"><path d="M40 90 L100 90 M150 80 L200 130 M50 150 L50 220 M130 200 L210 180"/></g>
+      <text x="120" y="300" text-anchor="middle" font-size="24" font-weight="600">bordi</text></g>
+    <g class="fragment rise"><rect x="290" y="40" width="240" height="220" rx="14" fill="var(--surface)"/>
+      <g stroke="var(--fg)" stroke-width="5" fill="none"><circle cx="360" cy="110" r="34"/><path d="M430 190 L470 120 L510 190 Z"/><rect x="320" y="170" width="70" height="60" rx="6"/></g>
+      <text x="410" y="300" text-anchor="middle" font-size="24" font-weight="600">forme</text></g>
+    <g class="fragment rise"><rect x="580" y="40" width="240" height="220" rx="14" fill="var(--surface)"/>
+      <g stroke="var(--fg)" stroke-width="5" fill="none" stroke-linecap="round"><ellipse cx="650" cy="110" rx="26" ry="16"/><circle cx="650" cy="110" r="7" fill="var(--fg)"/><path d="M720 90 L760 60 L775 105 Z"/><path d="M640 200 Q700 240 760 200"/></g>
+      <text x="700" y="300" text-anchor="middle" font-size="24" font-weight="600">parti: occhi, orecchie</text></g>
+    <g class="fragment rise"><rect x="870" y="40" width="240" height="220" rx="14" fill="var(--accent)"/>
+      <g stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"><circle cx="990" cy="160" r="70"/><path d="M935 115 L945 60 L975 98 M1045 115 L1035 60 L1005 98"/><circle cx="965" cy="150" r="6" fill="#fff"/><circle cx="1015" cy="150" r="6" fill="#fff"/><path d="M975 185 Q990 198 1005 185 M930 170 L895 165 M1050 170 L1085 165"/></g>
+      <text x="990" y="300" text-anchor="middle" font-size="24" font-weight="600">"gatto"</text></g>
+  </svg>
+  <p class="fragment rise" style="font-size:.85em">Nessuno ha detto alla rete di cercare i bordi. <b>Li ha trovati da sola</b>, perché servivano a ridurre l'errore.</p>
+</div>
+</section>
+<section data-js="conv">
+<div class="frame">
+  <div class="kicker">Come "guarda" una rete per immagini</div>
+  <div class="cols wide-left">
+    <svg data-conv class="diagram" viewBox="0 0 900 560" aria-label="Un filtro tre per tre scorre sull'immagine di un sette e produce la mappa dei bordi"></svg>
+    <div>
+      <h2>Un filtro che scorre</h2>
+      <p style="font-size:.85em">Un piccolo quadrato di pesi passa su tutta l'immagine. Dove trova il motivo che cerca (qui: un bordo verticale) si accende.</p>
+      <p class="fragment rise muted" style="font-size:.8em">Una rete convoluzionale ha centinaia di filtri per strato, e i loro pesi non li sceglie nessuno: si imparano.</p>
+      <p class="fragment rise" style="font-size:.8em">Per vederlo su una rete vera: <a href="https://poloclub.github.io/cnn-explainer/" target="_blank">CNN Explainer</a></p>
+    </div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Perché proprio adesso?</div>
+  <div class="cols wide-right">
+    <div class="stack" style="font-size:.85em">
+      <h2 style="font-size:1.9em">Le idee c'erano dagli anni '80.<br>Mancavano due cose.</h2>
+      <div class="fragment rise"><b>Dati</b> · ImageNet (2009): 14 milioni di immagini etichettate a mano.</div>
+      <div class="fragment rise"><b>Calcolo</b> · le schede grafiche dei videogiochi fanno benissimo le moltiplicazioni che servono alle reti.</div>
+      <div class="fragment rise muted">2012: AlexNet, addestrata su due schede grafiche, stacca tutti gli altri.</div>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 680 540" style="height:500px" aria-label="Errore dei vincitori della gara ImageNet dal 2010 al 2015"><rect class="bar-fill" style="--d:0.20s" x="60" y="73.4" width="70" height="366.6" rx="4" fill="var(--fg)"/><text class="appear" style="--d:0.90s" x="95.0" y="61.4" text-anchor="middle" font-size="22" font-weight="600">28,2%</text><text x="95.0" y="470" text-anchor="middle" class="muted" font-size="20">2010</text><rect class="bar-fill" style="--d:0.38s" x="160" y="104.6" width="70" height="335.4" rx="4" fill="var(--fg)"/><text class="appear" style="--d:1.08s" x="195.0" y="92.6" text-anchor="middle" font-size="22" font-weight="600">25,8%</text><text x="195.0" y="470" text-anchor="middle" class="muted" font-size="20">2011</text><rect class="bar-fill" style="--d:0.56s" x="260" y="241.1" width="70" height="198.9" rx="4" fill="var(--accent)"/><text class="appear" style="--d:1.26s" x="295.0" y="229.1" text-anchor="middle" font-size="22" font-weight="600">15,3%</text><text x="295.0" y="470" text-anchor="middle" class="muted" font-size="20">2012</text><text x="295.0" y="496" text-anchor="middle" class="acc" font-size="17">AlexNet</text><rect class="bar-fill" style="--d:0.74s" x="360" y="287.9" width="70" height="152.1" rx="4" fill="var(--fg)"/><text class="appear" style="--d:1.44s" x="395.0" y="275.9" text-anchor="middle" font-size="22" font-weight="600">11,7%</text><text x="395.0" y="470" text-anchor="middle" class="muted" font-size="20">2013</text><rect class="bar-fill" style="--d:0.92s" x="460" y="352.9" width="70" height="87.1" rx="4" fill="var(--fg)"/><text class="appear" style="--d:1.62s" x="495.0" y="340.9" text-anchor="middle" font-size="22" font-weight="600">6,7%</text><text x="495.0" y="470" text-anchor="middle" class="muted" font-size="20">2014</text><text x="495.0" y="496" text-anchor="middle" class="acc" font-size="17">GoogLeNet</text><rect class="bar-fill" style="--d:1.10s" x="560" y="393.2" width="70" height="46.8" rx="4" fill="var(--fg)"/><text class="appear" style="--d:1.80s" x="595.0" y="381.2" text-anchor="middle" font-size="22" font-weight="600">3,6%</text><text x="595.0" y="470" text-anchor="middle" class="muted" font-size="20">2015</text><text x="595.0" y="496" text-anchor="middle" class="acc" font-size="17">ResNet</text><line x1="40" x2="660" y1="373.7" y2="373.7" stroke="var(--muted)" stroke-dasharray="6 6" stroke-width="2"/></svg>
+      <div class="small" style="text-align:center">errore top-5 del vincitore della gara ImageNet · tratteggio: un umano attento, circa 5%</div>
+    </div>
+  </div>
+</div>
+<aside class="notes">Top-5: la risposta giusta deve stare fra le prime 5 proposte. Il 2012 è il salto: dal 26% circa al 15,3%. Il ~5% umano è una stima di Andrej Karpathy, che si cimentò di persona.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Overfitting</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 600 420" aria-label="Una curva semplice e una curva che passa per tutti i punti">
+      <rect x="0" y="0" width="600" height="420" rx="16" fill="var(--surface)"/>
+      <path d="M20 330 C 160 290, 300 170, 580 90" stroke="var(--fg)" stroke-width="5" fill="none" opacity=".35"/>
+      <path class="fragment" d="M20 300 C 50 200, 70 420, 110 300 S 150 160, 190 250 S 240 330, 280 200 S 330 80, 370 190 S 420 220, 460 120 S 520 40, 580 110" stroke="var(--accent)" stroke-width="5" fill="none"/>
+      <g fill="var(--pos)"><circle cx="40" cy="300" r="10"/><circle cx="110" cy="300" r="10"/><circle cx="190" cy="250" r="10"/><circle cx="280" cy="200" r="10"/><circle cx="370" cy="190" r="10"/><circle cx="460" cy="120" r="10"/><circle cx="560" cy="100" r="10"/></g>
+    </svg>
+    <div>
+      <h2>Lo studente che impara a memoria</h2>
+      <p style="font-size:.85em">Un modello troppo complicato passa per <b>tutti</b> gli esempi, rumore compreso.</p>
+      <p class="fragment rise" style="font-size:.85em">Perfetto sugli esercizi. Disastroso all'esame. Per questo serve il <b>test</b> su dati mai visti.</p>
+      <div class="fragment rise" style="margin-top:.6em"><div class="qr sm"><div><img src="qr/overfitting.svg" alt="QR code"><div class="url">nunziati.github.io/corso-ai-santa-chiara-lab-2026/modulo-a/demo/overfitting.html</div></div>
+<div><h3>Provate voi</h3><ol class="steps"><li>Alzate la complessità</li><li>Accendete i dati di test</li></ol></div></div></div>
+    </div>
+  </div>
+</div>
+</section>
+<section class="divider" data-background-color="#1A1A1A">
+<div class="frame">
+  <div class="kicker">Un altro modo di imparare</div>
+  <h1 style="font-size:2.8em">Per tentativi,<br>con un premio</h1>
+  <p class="lead">Apprendimento per rinforzo: nessuno dice la risposta giusta.</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Apprendimento per rinforzo</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 640 440" aria-label="Ciclo agente, azione, ambiente, premio">
+      <path id="rlloop" d="M160 120 C 260 40, 380 40, 480 120 C 560 200, 560 260, 480 320 C 380 400, 260 400, 160 320 C 80 260, 80 200, 160 120 Z" fill="none" stroke="var(--line)" stroke-width="4"/>
+      <circle r="12" class="loop-dot" style="offset-path:path('M160 120 C 260 40, 380 40, 480 120 C 560 200, 560 260, 480 320 C 380 400, 260 400, 160 320 C 80 260, 80 200, 160 120 Z')"/>
+      <rect x="40" y="170" width="170" height="100" rx="16" fill="var(--fg)"/><text x="125" y="230" text-anchor="middle" font-size="28" font-weight="600" fill="var(--bg)">agente</text>
+      <rect x="430" y="170" width="190" height="100" rx="16" fill="var(--surface)" stroke="var(--fg)" stroke-width="2"/><text x="525" y="230" text-anchor="middle" font-size="28" font-weight="600">ambiente</text>
+      <text x="320" y="40" text-anchor="middle" font-size="24" class="acc">azione</text>
+      <text x="320" y="425" text-anchor="middle" font-size="24" class="acc">premio + nuova situazione</text>
+    </svg>
+    <div class="stack" style="font-size:.85em">
+      <h2 style="font-size:1.9em">Prova, sbaglia,<br>riprova</h2>
+      <div class="fragment rise">L'agente sceglie un'azione, l'ambiente risponde con un <b>premio</b> (o una penalità).</div>
+      <div class="fragment rise">Spesso il premio arriva tardi: si vince o si perde solo alla fine della partita.</div>
+      <div class="fragment rise muted">Come imparare ad andare in bicicletta: nessuno vi dice l'angolo giusto del manubrio, ma cadere fa male.</div>
+    </div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Il dilemma</div>
+  <h2>Esplorare o sfruttare?</h2>
+  <div class="cols" style="align-items:stretch;margin-top:.3em">
+    <div class="card"><h3>Sfruttare</h3><p style="font-size:.95em">Tornare nel ristorante che conoscete e che vi piace. Sicuro, ma non scoprirete mai che ce n'è uno migliore dietro l'angolo.</p></div>
+    <div class="card"><h3>Esplorare</h3><p style="font-size:.95em">Provarne uno nuovo. A volte si mangia male, ma è l'unico modo per imparare qualcosa.</p></div>
+  </div>
+  <p class="fragment rise" style="margin-top:1em">Un agente che non esplora mai si accontenta della prima soluzione che trova.</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Dal telefono · 10 minuti</div>
+  <h2>Il robot nel labirinto</h2>
+  <div class="qr"><div><img src="qr/labirinto.svg" alt="QR code"><div class="url">nunziati.github.io/corso-ai-santa-chiara-lab-2026/modulo-a/demo/labirinto.html</div></div>
+<div><h3>Imparare per tentativi</h3><ol class="steps"><li>Premete <b>Avvia</b> e guardate le prime partite, a caso</li><li>Passate a <b>Veloce</b>: il premio si propaga all'indietro</li><li>Mettete un muro sulla strada migliore. Si adatta?</li><li>Portate la voglia di esplorare a zero</li></ol></div></div>
+</div>
+<aside class="notes">I colori sono il "valore" che il robot attribuisce a ogni casella: quanto premio si aspetta da lì in poi. Le frecce sono la mossa che oggi considera migliore. È Q-learning, l'algoritmo base dell'apprendimento per rinforzo.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">OpenAI, 2019 · Hide and Seek</div>
+  <div class="cols wide-right">
+    <div>
+      <h2>Strategie che nessuno ha programmato</h2>
+      <p style="font-size:.85em">Due squadre giocano a nascondino, centinaia di milioni di partite. Premio: farsi trovare o trovare.</p>
+      <ol class="steps" style="font-size:.7em">
+        <li class="fragment rise">chi si nasconde impara a <b>bloccare le porte</b> con le scatole</li>
+        <li class="fragment rise">chi cerca impara a usare le <b>rampe</b> per scavalcare</li>
+        <li class="fragment rise">chi si nasconde impara a <b>rubare le rampe</b> prima</li>
+        <li class="fragment rise">chi cerca scopre un difetto della simulazione: <b>"surfare" sulle scatole</b></li>
+      </ol>
+    </div>
+    <div class="card" style="text-align:center;padding:40px">
+      <p style="font-size:1em;color:var(--fg)">Video (2 minuti)</p>
+      <p><a href="https://openai.com/index/emergent-tool-use/" target="_blank" style="font-size:.9em">openai.com/index/emergent-tool-use</a></p>
+      <p class="small" style="margin-top:1em">Serve internet. Cercate anche "OpenAI hide and seek" su YouTube.</p>
+    </div>
+  </div>
+</div>
+<aside class="notes">Il punto 4 è importantissimo per il blocco 4: l'agente ottimizza il premio, non "quello che intendevamo". Se nella simulazione c'è una scorciatoia, la trova.</aside>
+</section>
+<section>
+<div class="frame center">
+  <div class="kicker">Fine del blocco 3</div>
+  <h2 style="font-size:2.2em">Domande?</h2>
+  <p class="lead">Pausa fino alle <b>16:00</b>. Poi: cosa succede quando questi modelli escono dal laboratorio.</p>
+</div>
+</section>
+<section class="divider" data-background-color="#1A1A1A">
+<div class="frame">
+  <div class="kicker">Blocco 4 · 16:00–17:30</div>
+  <h1 style="font-size:2.8em">L'IA nel<br>mondo reale</h1>
+  <p class="lead">Per ogni caso, una domanda: <b style="color:#fff">cosa ha imparato davvero il modello, e da quali dati?</b></p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Seul, marzo 2016 · AlphaGo contro Lee Sedol</div>
+  <div class="cols wide-right">
+    <div>
+      <div class="big accent" style="font-size:3.2em">1 su<br>10.000</div>
+      <div class="cap">la probabilità, stimata da AlphaGo stesso, che un umano giocasse la sua <b>mossa 37</b> nella partita 2</div>
+    </div>
+    <div class="stack" style="font-size:.85em">
+      <div>I commentatori pensarono a un errore. Era la mossa che decise la partita.</div>
+      <div class="fragment rise">Finale: <b>4 a 1</b> per AlphaGo. Nella partita 4 Lee Sedol rispose con la sua "mossa divina", la 78.</div>
+      <div class="fragment rise muted">Come ha imparato: prima imitando milioni di mosse di giocatori umani (supervisionato), poi giocando contro sé stesso (rinforzo).</div>
+    </div>
+  </div>
+</div>
+<aside class="notes">C'è un documentario libero su YouTube, "AlphaGo" (2017). La mossa 37 è il simbolo di una macchina che trova soluzioni che non le abbiamo insegnato.</aside>
+</section>
+<section>
+<div class="frame center">
+  <div class="kicker">2017 · AlphaGo Zero</div>
+  <div class="big">100 – 0</div>
+  <p class="lead" style="margin-top:.6em">Nessuna partita umana: solo le regole e partite contro sé stesso. Dopo tre giorni batte la versione che aveva battuto Lee Sedol, cento partite a zero.</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">2020 · AlphaFold</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 620 460" aria-label="Una sequenza di amminoacidi si ripiega in una struttura">
+      <text x="40" y="60" class="mono" font-size="22">M</text><text x="64" y="60" class="mono" font-size="22">K</text><text x="88" y="60" class="mono" font-size="22">T</text><text x="112" y="60" class="mono" font-size="22">A</text><text x="136" y="60" class="mono" font-size="22">Y</text><text x="160" y="60" class="mono" font-size="22">I</text><text x="184" y="60" class="mono" font-size="22">A</text><text x="208" y="60" class="mono" font-size="22">K</text><text x="232" y="60" class="mono" font-size="22">Q</text><text x="256" y="60" class="mono" font-size="22">R</text><text x="280" y="60" class="mono" font-size="22">Q</text><text x="304" y="60" class="mono" font-size="22">I</text><text x="328" y="60" class="mono" font-size="22">S</text><text x="352" y="60" class="mono" font-size="22">F</text><text x="376" y="60" class="mono" font-size="22">V</text><text x="400" y="60" class="mono" font-size="22">K</text><text x="424" y="60" class="mono" font-size="22">S</text><text x="448" y="60" class="mono" font-size="22">H</text><text x="472" y="60" class="mono" font-size="22">F</text><text x="496" y="60" class="mono" font-size="22">S</text><text x="520" y="60" class="mono" font-size="22">R</text><text x="544" y="60" class="mono" font-size="22">Q</text>
+      <text x="40" y="100" class="muted" font-size="18">la sequenza: una fila di lettere</text>
+      <path class="draw" style="--len:2200;--d:.6s" d="M80 380 C 40 300, 160 250, 200 320 S 300 420, 330 330 S 260 200, 340 190 S 470 260, 450 340 S 560 420, 580 330 S 520 180, 450 160 S 360 120, 300 150" stroke="var(--accent)" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <text x="330" y="450" text-anchor="middle" class="muted" font-size="18">la forma 3D: quella che decide cosa fa la proteina</text>
+    </svg>
+    <div class="stack" style="font-size:.85em">
+      <h2 style="font-size:1.8em">Un problema aperto da 50 anni</h2>
+      <div class="fragment rise">Prevedere la forma di una proteina dalla sola sequenza. Misurarla in laboratorio può richiedere mesi o anni.</div>
+      <div class="fragment rise">Addestrato su decenni di strutture misurate e pubblicate (Protein Data Bank). Oggi: <b>oltre 200 milioni</b> di strutture previste, gratis.</div>
+      <div class="fragment rise accent"><b>Nobel per la Chimica 2024</b> a Demis Hassabis e John Jumper (con David Baker).</div>
+    </div>
+  </div>
+</div>
+<aside class="notes">Collegamento con il tuo lavoro: le strutture 3D sono anche il punto di partenza di SADIC, che vediamo alla fine.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Agricoltura · John Deere See &amp; Spray</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 660 400" aria-label="Barra di irrorazione con telecamere che spruzza solo sulle erbacce">
+      <rect x="0" y="330" width="660" height="40" fill="var(--surface)"/>
+      <rect x="0" y="130" width="660" height="20" rx="6" fill="var(--fg)"/>
+      <g fill="var(--fg)"><rect x="26" y="110" width="28" height="22" rx="4"/><rect x="96" y="110" width="28" height="22" rx="4"/><rect x="166" y="110" width="28" height="22" rx="4"/><rect x="236" y="110" width="28" height="22" rx="4"/><rect x="306" y="110" width="28" height="22" rx="4"/><rect x="376" y="110" width="28" height="22" rx="4"/><rect x="446" y="110" width="28" height="22" rx="4"/><rect x="516" y="110" width="28" height="22" rx="4"/><rect x="586" y="110" width="28" height="22" rx="4"/></g>
+      <g transform="translate(40,330)"><path d="M0 0 Q-20 -40 -6 -60 M0 0 Q20 -40 6 -60 M0 0 L0 -55" stroke="var(--ok)" stroke-width="5" fill="none" stroke-linecap="round"/></g><g transform="translate(110,330)"><path d="M0 0 L-14 -30 M0 0 L0 -38 M0 0 L14 -28" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/><circle cx="0" cy="-42" r="6" fill="var(--accent)"/></g><path class="spray" style="--d:0.35s" d="M90 150 L80 300 L140 300 L130 150 Z" fill="var(--accent-2)" opacity=".25"/><g transform="translate(180,330)"><path d="M0 0 Q-20 -40 -6 -60 M0 0 Q20 -40 6 -60 M0 0 L0 -55" stroke="var(--ok)" stroke-width="5" fill="none" stroke-linecap="round"/></g><g transform="translate(250,330)"><path d="M0 0 Q-20 -40 -6 -60 M0 0 Q20 -40 6 -60 M0 0 L0 -55" stroke="var(--ok)" stroke-width="5" fill="none" stroke-linecap="round"/></g><g transform="translate(320,330)"><path d="M0 0 L-14 -30 M0 0 L0 -38 M0 0 L14 -28" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/><circle cx="0" cy="-42" r="6" fill="var(--accent)"/></g><path class="spray" style="--d:1.10s" d="M300 150 L290 300 L350 300 L340 150 Z" fill="var(--accent-2)" opacity=".25"/><g transform="translate(390,330)"><path d="M0 0 Q-20 -40 -6 -60 M0 0 Q20 -40 6 -60 M0 0 L0 -55" stroke="var(--ok)" stroke-width="5" fill="none" stroke-linecap="round"/></g><g transform="translate(460,330)"><path d="M0 0 Q-20 -40 -6 -60 M0 0 Q20 -40 6 -60 M0 0 L0 -55" stroke="var(--ok)" stroke-width="5" fill="none" stroke-linecap="round"/></g><g transform="translate(530,330)"><path d="M0 0 L-14 -30 M0 0 L0 -38 M0 0 L14 -28" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/><circle cx="0" cy="-42" r="6" fill="var(--accent)"/></g><path class="spray" style="--d:1.85s" d="M510 150 L500 300 L560 300 L550 150 Z" fill="var(--accent-2)" opacity=".25"/><g transform="translate(600,330)"><path d="M0 0 Q-20 -40 -6 -60 M0 0 Q20 -40 6 -60 M0 0 L0 -55" stroke="var(--ok)" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+      <text x="0" y="90" class="muted" font-size="20">telecamere sulla barra · una rete riconosce le erbacce · spruzza solo lì</text>
+    </svg>
+    <div>
+      <div class="big accent">−59%</div>
+      <div class="cap">erbicida in media nel 2024, su oltre 1 milione di acri (dato dell'azienda)</div>
+      <p class="fragment rise" style="font-size:.8em;margin-top:1em">Decisione presa in pochi millisecondi, pianta per pianta, mentre il trattore avanza.</p>
+    </div>
+  </div>
+</div>
+<aside class="notes">Comunicato John Deere, 18 settembre 2024. Studi indipendenti dell'Iowa State University riportano risparmi anche più alti in singoli campi; nel 2025 l'azienda ha dichiarato circa il 50%, con più infestanti.</aside>
+</section>
+<section class="divider" data-background-color="#1A1A1A">
+<div class="frame">
+  <div class="kicker">Quando il modello impara la scorciatoia</div>
+  <h1 style="font-size:2.6em">Il cavallo<br>che sapeva contare</h1>
+  <p class="lead">Berlino, 1907: Hans "risolveva" le addizioni battendo lo zoccolo. In realtà leggeva le reazioni involontarie di chi lo interrogava. Rispondeva giusto, per il motivo sbagliato.</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Lupo o husky?</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 640 420" aria-label="Foto schematiche: il modello guarda la neve, non l'animale">
+      <rect x="0" y="0" width="300" height="300" rx="14" fill="#E6EEF5"/>
+      <path d="M0 210 Q150 180 300 215 L300 300 L0 300 Z" fill="#fff"/>
+      <g fill="var(--muted)"><path d="M90 200 L110 120 L130 150 L170 150 L190 120 L210 200 Z"/><circle cx="150" cy="185" r="40"/></g>
+      <path class="fragment" data-fragment-index="1" d="M0 210 Q150 180 300 215 L300 300 L0 300 Z" fill="var(--accent)" opacity=".45"/>
+      <text x="150" y="340" text-anchor="middle" font-size="22">previsione: <tspan font-weight="700" class="acc">lupo</tspan></text>
+      <text x="150" y="370" text-anchor="middle" class="muted" font-size="18">(era un husky, sulla neve)</text>
+      <rect x="340" y="0" width="300" height="300" rx="14" fill="#E9EFE0"/>
+      <path d="M340 220 Q490 200 640 225 L640 300 L340 300 Z" fill="#B9CFA0"/>
+      <g fill="var(--muted)"><path d="M430 200 L450 120 L470 150 L510 150 L530 120 L550 200 Z"/><circle cx="490" cy="185" r="40"/></g>
+      <text x="490" y="340" text-anchor="middle" font-size="22">previsione: <tspan font-weight="700">husky</tspan></text>
+      <text x="490" y="370" text-anchor="middle" class="muted" font-size="18">(era un lupo, sull'erba)</text>
+    </svg>
+    <div class="stack" style="font-size:.85em">
+      <div>Un classificatore addestrato su foto in cui i lupi erano quasi sempre sulla neve.</div>
+      <div class="fragment rise" data-fragment-index="1">Chiedendogli <b>dove guardava</b>, la risposta: la neve. Aveva imparato "neve = lupo".</div>
+      <div class="fragment rise muted">L'esperimento era costruito apposta, per mostrare quanto sia facile non accorgersene guardando solo l'accuratezza.</div>
+    </div>
+  </div>
+</div>
+<div class="src">Ribeiro, Singh, Guestrin, "Why Should I Trust You?", KDD 2016</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Dermatologia · i righelli</div>
+  <div class="cols wide-left">
+    <svg class="diagram" viewBox="0 0 640 380" aria-label="Foto di una lesione cutanea con un righello accanto">
+      <rect x="0" y="0" width="640" height="320" rx="14" fill="#F1D9C9"/>
+      <ellipse cx="280" cy="160" rx="62" ry="50" fill="#6B4433"/>
+      <g class="fragment" data-fragment-index="1"><rect x="430" y="40" width="70" height="240" rx="6" fill="var(--accent)" opacity=".35"/></g>
+      <rect x="440" y="40" width="50" height="240" fill="#F7F3E8" stroke="#888"/>
+      <g stroke="#555" stroke-width="2"><line x1="440" x2="472" y1="50" y2="50"/><line x1="440" x2="460" y1="61" y2="61"/><line x1="440" x2="460" y1="72" y2="72"/><line x1="440" x2="460" y1="83" y2="83"/><line x1="440" x2="460" y1="94" y2="94"/><line x1="440" x2="472" y1="105" y2="105"/><line x1="440" x2="460" y1="116" y2="116"/><line x1="440" x2="460" y1="127" y2="127"/><line x1="440" x2="460" y1="138" y2="138"/><line x1="440" x2="460" y1="149" y2="149"/><line x1="440" x2="472" y1="160" y2="160"/><line x1="440" x2="460" y1="171" y2="171"/><line x1="440" x2="460" y1="182" y2="182"/><line x1="440" x2="460" y1="193" y2="193"/><line x1="440" x2="460" y1="204" y2="204"/><line x1="440" x2="472" y1="215" y2="215"/><line x1="440" x2="460" y1="226" y2="226"/><line x1="440" x2="460" y1="237" y2="237"/><line x1="440" x2="460" y1="248" y2="248"/><line x1="440" x2="460" y1="259" y2="259"/><line x1="440" x2="472" y1="270" y2="270"/></g>
+      <text x="320" y="360" text-anchor="middle" font-size="20" class="muted">il modello trova "maligno" più spesso quando c'è un righello</text>
+    </svg>
+    <div class="stack" style="font-size:.85em">
+      <div>Una rete classifica i nei da foto, al livello dei dermatologi (2017).</div>
+      <div class="fragment rise" data-fragment-index="1">Ma i nei sospetti vengono fotografati <b>con il righello</b>, per misurarli. Il modello aveva imparato anche il righello.</div>
+      <div class="fragment rise muted">Il modello non sa cosa "dovrebbe" guardare. Guarda tutto quello che funziona sui dati.</div>
+    </div>
+  </div>
+</div>
+<div class="src">Esteva et al., Nature 2017 · Narla et al., J. Invest. Dermatol. 2018</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Dal laboratorio alla clinica · Thailandia</div>
+  <h2>Perfetto in laboratorio, in difficoltà in ambulatorio</h2>
+  <div class="cols" style="align-items:stretch;margin-top:.2em;font-size:.9em">
+    <div class="card"><h3>In laboratorio</h3><p style="font-size:1em">Riconosce la retinopatia diabetica dalle foto dell'occhio con precisione da specialista.</p></div>
+    <div class="card hot fragment rise"><h3>In 11 ambulatori</h3><p style="font-size:1em">Luce scarsa, fotocamere diverse, connessione lenta. Più di un'immagine su cinque <b>rifiutata</b> come "di qualità insufficiente". Pazienti rimandati a un altro giorno.</p></div>
+  </div>
+  <p class="fragment rise" style="margin-top:1em">I dati di addestramento non sono il mondo. Il modello è un pezzo di un sistema fatto di <b>persone, procedure e strumenti</b>.</p>
+</div>
+<div class="src">Beede et al., CHI 2020 (Google Health)</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Nessun modello è perfetto</div>
+  <div class="cols wide-right" style="align-items:start">
+    <div>
+      <h2>Qualcuno sceglie<br>dove sbagliare</h2>
+      <p style="font-size:.85em">Ogni modello dà un punteggio. La <b>soglia</b> decide cosa diventa "sì".</p>
+      <ul style="font-size:.8em">
+        <li class="fragment rise"><b>Screening</b>: meglio qualche sano in più agli esami che un malato a casa.</li>
+        <li class="fragment rise"><b>Antispam</b>: meglio uno spam in più nella posta che una mail importante nel cestino.</li>
+        <li class="fragment rise"><b>Antifrode</b>: e se il falso positivo è una famiglia accusata ingiustamente?</li>
+      </ul>
+    </div>
+    <div class="qr"><div><img src="qr/soglia.svg" alt="QR code"><div class="url">nunziati.github.io/corso-ai-santa-chiara-lab-2026/modulo-a/demo/soglia.html</div></div>
+<div><h3>Spostate voi la soglia</h3><ol class="steps"><li>100 persone, 10 malate</li><li>Contate i due tipi di errore</li></ol></div></div>
+  </div>
+</div>
+<aside class="notes">L'ultima domanda introduce il caso olandese. Falsi positivi e falsi negativi hanno costi diversi, e a pagarli sono persone diverse.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Proviamo · 10 minuti</div>
+  <h2>Un'IA impara a selezionare il personale</h2>
+  <div style="display:grid;grid-template-columns:170px 1fr 1.25fr;gap:32px;align-items:center" class="grow">
+<div><img src="qr/survival.svg" alt="QR code" style="width:170px;height:170px;background:#fff;padding:6px;border-radius:10px;box-sizing:border-box"><div class="mono" style="font-size:13px;color:var(--muted);margin-top:6px;word-break:break-all">survivalofthebestfit.com</div></div>
+<div><h3>Survival of the Best Fit</h3><ol class="steps" style="font-size:.78em"><li>Fate i selezionatori: assumete le persone migliori</li><li>Poi un'IA impara dalle vostre scelte</li><li>Guardate chi scarta, e perché</li></ol></div>
+<div class="figure" style="height:400px"><img class="photo contain" src="img/ext-survival.jpg" alt="Schermata del gioco Survival of the Best Fit"></div></div>
+</div>
+<aside class="notes">Gioco del 2019 ispirato al caso reale di Amazon: nel 2018 l'azienda abbandonò uno strumento di selezione che, addestrato sui CV degli assunti dei dieci anni prima, penalizzava i curriculum con la parola "women's".</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Gender Shades · 2018</div>
+  <div class="cols wide-right">
+    <div class="stack" style="font-size:.85em">
+      <h2 style="font-size:1.8em">Lo stesso software sbaglia molto di più su alcune persone</h2>
+      <div>Riconoscimento del genere da una foto, software commerciale di IBM. Percentuale di errori per gruppo.</div>
+      <div class="fragment rise">Il meccanismo: nei dati di addestramento alcuni gruppi erano <b>rari</b>.</div>
+      <div class="fragment rise muted">Dopo la pubblicazione, le aziende coinvolte hanno migliorato i modelli in meno di un anno.</div>
+    </div>
+    <svg class="diagram" viewBox="0 0 640 500" aria-label="Errori per gruppo: 0,3%, 7,1%, 12%, 34,7%"><rect class="bar-fill" style="--d:0.20s" x="40" y="416.9" width="110" height="3.1" rx="4" fill="var(--line)"/><text class="appear" style="--d:1.00s" x="95" y="402.9" text-anchor="middle" font-size="26" font-weight="600" fill="var(--fg)">0,3%</text><text x="95" y="450" text-anchor="middle" class="muted" font-size="19">uomini</text><text x="95" y="474" text-anchor="middle" class="muted" font-size="19">pelle chiara</text><rect class="bar-fill" style="--d:0.35s" x="190" y="345.4" width="110" height="74.5" rx="4" fill="var(--line)"/><text class="appear" style="--d:1.15s" x="245" y="331.4" text-anchor="middle" font-size="26" font-weight="600" fill="var(--fg)">7,1%</text><text x="245" y="450" text-anchor="middle" class="muted" font-size="19">donne</text><text x="245" y="474" text-anchor="middle" class="muted" font-size="19">pelle chiara</text><rect class="bar-fill" style="--d:0.50s" x="340" y="294.0" width="110" height="126.0" rx="4" fill="var(--line)"/><text class="appear" style="--d:1.30s" x="395" y="280.0" text-anchor="middle" font-size="26" font-weight="600" fill="var(--fg)">12,0%</text><text x="395" y="450" text-anchor="middle" class="muted" font-size="19">uomini</text><text x="395" y="474" text-anchor="middle" class="muted" font-size="19">pelle scura</text><rect class="bar-fill" style="--d:0.65s" x="490" y="55.6" width="110" height="364.4" rx="4" fill="var(--accent)"/><text class="appear" style="--d:1.45s" x="545" y="41.6" text-anchor="middle" font-size="34" font-weight="600" fill="var(--accent)">34,7%</text><text x="545" y="450" text-anchor="middle" class="muted" font-size="19">donne</text><text x="545" y="474" text-anchor="middle" class="muted" font-size="19">pelle scura</text><line x1="20" x2="620" y1="420" y2="420" stroke="var(--fg)" stroke-width="2"/></svg>
+  </div>
+</div>
+<div class="src">Buolamwini &amp; Gebru, FAT* 2018 · risultati per IBM</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Dal telefono · 5 minuti</div>
+  <h2>Il modello impara chi vede</h2>
+  <div class="qr"><div><img src="qr/bias.svg" alt="QR code"><div class="url">nunziati.github.io/corso-ai-santa-chiara-lab-2026/modulo-a/demo/bias.html</div></div>
+<div><h3>Bias dai dati</h3><ol class="steps"><li>Partite con il gruppo B al 5%: quanto sbaglia su B?</li><li>Alzate la quota di B: cosa cambia?</li><li>Nessuno ha scritto «discrimina»: da dove viene l'errore?</li></ol></div></div>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Paesi Bassi · Toeslagenaffaire</div>
+  <div class="cols wide-right">
+    <div>
+      <div class="big accent" style="font-size:2.6em">decine di migliaia</div>
+      <div class="cap">di famiglie accusate ingiustamente di frode sui sussidi per l'infanzia, e costrette a restituire somme enormi</div>
+    </div>
+    <div class="stack" style="font-size:.82em">
+      <div>Un modello di rischio dell'amministrazione fiscale segnalava le domande "sospette". Fra i fattori c'era la <b>doppia cittadinanza</b>.</div>
+      <div class="fragment rise">Nessuna spiegazione, nessuna possibilità reale di contestare. Famiglie rovinate, figli dati in affido.</div>
+      <div class="fragment rise"><b>Gennaio 2021</b>: il governo Rutte si dimette. Il Garante olandese della privacy multa l'amministrazione fiscale per 2,75 milioni di euro.</div>
+      <div class="fragment rise muted">Il bias qui non è solo nei dati: è nell'<b>obiettivo</b> (trovare frodi a ogni costo) e nell'<b>uso</b> (decisioni automatiche senza appello).</div>
+    </div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Privacy · Clearview AI</div>
+  <div class="cols wide-right">
+    <div>
+      <div class="big accent" style="font-size:3.2em">20 mln €</div>
+      <div class="cap">la multa del Garante italiano per la privacy (2022), con l'ordine di cancellare i dati delle persone in Italia</div>
+    </div>
+    <div class="stack" style="font-size:.85em">
+      <div>Un motore di riconoscimento facciale costruito con <b>miliardi di foto</b> prese dai social e dal web, senza chiedere a nessuno.</div>
+      <div class="fragment rise">Si carica la foto di uno sconosciuto, il sistema trova chi è. Venduto a forze di polizia di molti paesi.</div>
+      <div class="fragment rise muted">Il modello funziona bene <b>proprio perché</b> i dati sono stati presi senza permesso.</div>
+    </div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Lavoro · Foodinho (Glovo) e il Garante</div>
+  <div class="cols wide-right">
+    <div class="stack">
+      <div><div class="big" style="font-size:3em">2,6 mln €</div><div class="cap">multa del Garante privacy, 2021</div></div>
+      <div class="fragment rise" data-fragment-index="2"><div class="big accent" style="font-size:3em">5 mln €</div><div class="cap">di nuovo, novembre 2024 · oltre 35.000 rider</div></div>
+    </div>
+    <div class="stack" style="font-size:.85em">
+      <div>Turni e consegne assegnati da un algoritmo, in base a un punteggio di ogni rider.</div>
+      <div class="fragment rise" data-fragment-index="1">Nessun intervento umano previsto, nessuna possibilità reale di contestare. Geolocalizzazione anche fuori turno, riconoscimento facciale per l'identità.</div>
+      <div class="fragment rise muted" data-fragment-index="2">Le domande da farsi: chi decide? Con quali dati? Chi può fare ricorso?</div>
+    </div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Regolamento UE 2024/1689 · AI Act</div>
+  <h2>Regole diverse per rischi diversi</h2>
+  <svg class="diagram grow" viewBox="0 0 1100 500" aria-label="Piramide del rischio dell'AI Act"><g class="fragment rise"><path d="M310.0 40 L790.0 40 L830.0 140 L270.0 140 Z" fill="var(--accent)" stroke="var(--line)" stroke-width="2"/><text x="550" y="82" text-anchor="middle" font-size="24" font-weight="700" fill="#fff">Rischio inaccettabile · vietato</text><text x="550" y="114" text-anchor="middle" font-size="18" fill="#fff" opacity=".85">punteggio sociale, volti raccolti dal web, manipolazione</text></g><g class="fragment rise"><path d="M230.0 150 L870.0 150 L910.0 250 L190.0 250 Z" fill="#F3DCCF" stroke="var(--line)" stroke-width="2"/><text x="550" y="192" text-anchor="middle" font-size="24" font-weight="700" fill="var(--fg)">Rischio alto · regole severe</text><text x="550" y="224" text-anchor="middle" font-size="18" fill="var(--fg)" opacity=".85">selezione del personale, credito, istruzione, sanità, giustizia</text></g><g class="fragment rise"><path d="M150.0 260 L950.0 260 L990.0 360 L110.0 360 Z" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/><text x="550" y="302" text-anchor="middle" font-size="24" font-weight="700" fill="var(--fg)">Rischio limitato · trasparenza</text><text x="550" y="334" text-anchor="middle" font-size="18" fill="var(--fg)" opacity=".85">chatbot, contenuti generati: bisogna dirlo</text></g><g class="fragment rise"><path d="M70.0 370 L1030.0 370 L1070.0 470 L30.0 470 Z" fill="var(--bg)" stroke="var(--line)" stroke-width="2"/><text x="550" y="412" text-anchor="middle" font-size="24" font-weight="700" fill="var(--fg)">Rischio minimo · libero</text><text x="550" y="444" text-anchor="middle" font-size="18" fill="var(--fg)" opacity=".85">filtri antispam, videogiochi</text></g></svg>
+</div>
+<aside class="notes">In vigore dal 1° agosto 2024, con applicazione graduale: i divieti dal febbraio 2025. Notate che due dei casi di oggi (Clearview e il punteggio sociale) cadono proprio nei divieti.</aside>
+</section>
+<section class="divider" data-background-color="#1A1A1A">
+<div class="frame">
+  <div class="kicker">Dal mio laboratorio</div>
+  <h1 style="font-size:2.8em">Tre progetti,<br>visti da dentro</h1>
+  <p class="lead">Spoiler: il modello è il pezzo più piccolo.</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Proteine e mutazioni</div>
+  <h2>Quanto è grave una mutazione?</h2>
+  <div class="cols three" style="margin-top:.3em;font-size:.92em">
+    <div class="card fragment rise"><div class="mono small">SADIC · il mio lavoro</div><h3 style="margin-top:.4em">La profondità degli atomi</h3><p>Calcola quanto è "sepolto" ogni atomo nella struttura 3D. Le mutazioni in profondità tendono a destabilizzare di più: la profondità diventa una <b>feature</b> per prevedere l'effetto.</p></div>
+    <div class="card fragment rise"><div class="mono small">2023 · AlphaMissense</div><h3 style="margin-top:.4em">Tutte le mutazioni, insieme</h3><p>DeepMind classifica <b>71 milioni</b> di possibili sostituzioni di un amminoacido come probabilmente innocue o dannose, partendo da AlphaFold.</p></div>
+    <div class="card hot fragment rise"><div class="mono" style="font-size:.5em;opacity:.8">2026 · AlphaGenome</div><h3 style="margin-top:.4em">Il passo successivo: il DNA</h3><p>Pubblicato su Nature a gennaio 2026: legge fino a un milione di basi di DNA e prevede come una variante cambia la regolazione dei geni.</p></div>
+  </div>
+  <p class="fragment rise" style="margin-top:1em;font-size:.85em">Dalle feature scelte a mano a modelli che imparano da soli cosa guardare: la stessa storia di questa mattina, in piccolo.</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Sanità · eye tracking clinico</div>
+  <h2>Dove guarda l'occhio, frame dopo frame</h2>
+  <p class="muted" style="font-size:.82em">Per i test dei movimenti oculari che fanno ortottisti e oculisti.</p>
+  <div style="display:grid;grid-template-columns:1fr 40px 1fr 40px 1fr 40px 1fr 40px 1fr;gap:8px;margin-top:.6em"><div class="card  fragment rise" style="text-align:center;padding:18px 10px"><h3 style="font-size:.85em;margin:0">Acquisizione</h3><p style="margin-top:.3em">telecamera, luce, posizione</p></div><div class="fragment rise accent" style="align-self:center;font-size:1.3em">→</div><div class="card  fragment rise" style="text-align:center;padding:18px 10px"><h3 style="font-size:.85em;margin:0">Dati</h3><p style="margin-top:.3em">migliaia di frame etichettati</p></div><div class="fragment rise accent" style="align-self:center;font-size:1.3em">→</div><div class="card hot fragment rise" style="text-align:center;padding:18px 10px"><h3 style="font-size:.85em;margin:0">Modello</h3><p style="margin-top:.3em">trova pupilla e direzione</p></div><div class="fragment rise accent" style="align-self:center;font-size:1.3em">→</div><div class="card  fragment rise" style="text-align:center;padding:18px 10px"><h3 style="font-size:.85em;margin:0">Integrazione</h3><p style="margin-top:.3em">dentro il software clinico</p></div><div class="fragment rise accent" style="align-self:center;font-size:1.3em">→</div><div class="card  fragment rise" style="text-align:center;padding:18px 10px"><h3 style="font-size:.85em;margin:0">Persone</h3><p style="margin-top:.3em">chi lo usa ogni giorno</p></div></div>
+  <p class="fragment rise" style="margin-top:1.2em">Il modello è un quinto del lavoro. Il resto è tutto quello che gli sta intorno, ed è lì che i progetti di solito falliscono.</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Industria · progetto CARES, con Nuovo Pignone / Baker Hughes</div>
+  <h2>Un robot che cerca le perdite di gas</h2>
+  <p class="muted" style="font-size:.82em">Ispezione di impianti industriali: dove l'errore costa caro e gli esempi di "perdita" sono rari.</p>
+  <div style="display:grid;grid-template-columns:1fr 40px 1fr 40px 1fr 40px 1fr;gap:8px;margin-top:.6em"><div class="card  fragment rise" style="text-align:center;padding:18px 10px"><h3 style="font-size:.85em;margin:0">Sensori</h3><p style="margin-top:.3em">immagini 2D e nuvole di punti 3D</p></div><div class="fragment rise accent" style="align-self:center;font-size:1.3em">→</div><div class="card  fragment rise" style="text-align:center;padding:18px 10px"><h3 style="font-size:.85em;margin:0">Riconoscere</h3><p style="margin-top:.3em">componenti e oggetti dell'impianto</p></div><div class="fragment rise accent" style="align-self:center;font-size:1.3em">→</div><div class="card hot fragment rise" style="text-align:center;padding:18px 10px"><h3 style="font-size:.85em;margin:0">Rilevare</h3><p style="margin-top:.3em">la perdita, che è un evento raro</p></div><div class="fragment rise accent" style="align-self:center;font-size:1.3em">→</div><div class="card  fragment rise" style="text-align:center;padding:18px 10px"><h3 style="font-size:.85em;margin:0">Decidere</h3><p style="margin-top:.3em">dove mandare il robot e quando chiamare una persona</p></div></div>
+  <p class="fragment rise" style="margin-top:1.2em">Due temi di oggi in un progetto solo: <b>pochi esempi</b> del caso che conta, e la <b>soglia</b>, cioè quanti falsi allarmi siamo disposti ad accettare.</p>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Da portare a casa</div>
+  <h2>Cinque idee</h2>
+  <ol class="steps" style="font-size:.95em"><li class="fragment rise">Il machine learning ricava le regole dagli <b>esempi</b>.</li><li class="fragment rise">Un neurone è una <b>somma pesata</b> con una soglia. Una rete ne mette insieme tanti, a strati.</li><li class="fragment rise">Imparare vuol dire <b>ridurre l'errore</b> spostando i pesi, un passo alla volta.</li><li class="fragment rise">Il modello impara ciò che c'è nei dati: <b>scorciatoie e bias compresi</b>.</li><li class="fragment rise">Ogni sistema sceglie <b>dove sbagliare</b>, e qualcuno ne deve rispondere.</li></ol>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Verso il modulo B</div>
+  <h2>Lo stesso meccanismo, un altro compito</h2>
+  <div class="card" style="font-size:1.15em;padding:28px 34px;margin-top:.3em">Domani a Siena ci sarà il <span class="accent">sole</span><span class="blink" style="color:var(--accent)">▍</span></div>
+  <div style="display:grid;grid-template-columns:160px 1fr 70px;gap:10px 16px;align-items:center;margin-top:1em;font-size:.8em">
+    <span>sole</span><svg height="24" style="width:100%"><rect class="hbar" style="--d:.2s" width="62%" height="24" rx="4" fill="var(--accent)"/></svg><span class="mono">62%</span>
+    <span>pioggia</span><svg height="24" style="width:100%"><rect class="hbar" style="--d:.35s" width="21%" height="24" rx="4" fill="var(--line)"/></svg><span class="mono">21%</span>
+    <span>nebbia</span><svg height="24" style="width:100%"><rect class="hbar" style="--d:.5s" width="9%" height="24" rx="4" fill="var(--line)"/></svg><span class="mono">9%</span>
+  </div>
+  <p class="fragment rise" style="margin-top:1em">Una rete che classifica la <b>parola successiva</b>, addestrata su miliardi di frasi. È il punto di partenza del prossimo modulo.</p>
+</div>
+<aside class="notes">Solo un aggancio, niente dettagli. Le percentuali sono illustrative.</aside>
+</section>
+<section>
+<div class="frame">
+  <div class="cols wide-left">
+    <div>
+      <div class="kicker">Grazie</div>
+      <h1 style="font-size:3em">Domande?</h1>
+      <p class="lead">Slide e demo restano online: riprovatele con calma, e fatele provare a qualcuno.</p>
+      <p style="margin-top:1em;font-size:.7em" class="muted">Giacomo Nunziati · AI for Future · Santa Chiara Lab, Università di Siena</p>
+    </div>
+    <div style="text-align:center"><img src="qr/materiali.svg" alt="QR code dei materiali" style="width:300px;height:300px;background:#fff;padding:10px;border-radius:12px"><div class="mono small" style="margin-top:.6em">nunziati.github.io/corso-ai-santa-chiara-lab-2026</div></div>
+  </div>
+</div>
+</section>
+<section>
+<div class="frame">
+  <div class="kicker">Crediti</div>
+  <h2 style="font-size:1.4em">Immagini e fonti</h2>
+  <ul style="font-size:.6em;color:var(--muted)">
+    <li>Sala calcolo del NACA, 1949: NASA, pubblico dominio (Wikimedia Commons).</li>
+    <li>Alan Turing a 16 anni: pubblico dominio (Wikimedia Commons).</li>
+    <li>Frank Rosenblatt: Wikimedia Commons, CC BY-SA 4.0.</li>
+    <li>Mark I Perceptron, figura 2 del manuale operativo: pubblico dominio (Wikimedia Commons).</li>
+    <li>Schermate di Quick, Draw! (Google), TensorFlow Playground, Survival of the Best Fit, CNN Explainer: dai rispettivi siti, a scopo didattico.</li>
+    <li>Dataset piatti/bottiglie: dalla presentazione "Intelligenza Artificiale" di C. Graziani e P. Andreini.</li>
+    <li>Fonti dei numeri: AlphaGo (DeepMind, 2016–2017); AlphaFold (Jumper et al., Nature 2021); AlphaMissense (Cheng et al., Science 2023); AlphaGenome (Avsec et al., Nature 2026); See &amp; Spray (John Deere, 2024); Ribeiro et al. KDD 2016; Narla et al. JID 2018; Beede et al. CHI 2020; Buolamwini &amp; Gebru FAT* 2018; Garante privacy (Clearview 2022, Foodinho 2021 e 2024); AlexNet (Krizhevsky et al., NeurIPS 2012).</li>
+  </ul>
+</div>
+</section>
+</div></div>
+<script src="../../vendor/reveal/reveal.js"></script>
+<script src="../../vendor/reveal/plugin/notes/notes.js"></script>
+<script src="deck.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+/* Temi condivisi da slide e demo.
+   Il tema in uso è quello in :root; gli altri si attivano con data-theme sull'elemento html. */
+@import url("../../vendor/fonts/fonts.css");
+
+:root,
+[data-theme="editoriale"] {
+  --bg: #FBF8F3; --surface: #F2ECE2; --fg: #1A1A1A; --muted: #6B645B; --line: #D9D0C3;
+  --accent: #E4572E; --accent-2: #2E5EAA;
+  --pos: #2E5EAA; --neg: #E4572E; --ok: #2F8F5B;
+  --head: 'Fraunces', Georgia, serif; --head-w: 600; --head-track: -0.02em;
+  --body: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+[data-theme="tech"] {
+  --bg: #FFFFFF; --surface: #F4F5FB; --fg: #0F172A; --muted: #5B6478; --line: #E2E5F0;
+  --accent: #4F46E5; --accent-2: #06B6D4;
+  --pos: #4F46E5; --neg: #F97316; --ok: #059669;
+  --head: 'Space Grotesk', system-ui, sans-serif; --head-w: 700; --head-track: -0.03em;
+  --body: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+[data-theme="lab"] {
+  --bg: #0B0F14; --surface: #131A22; --fg: #E6EDF3; --muted: #8B98A8; --line: #223040;
+  --accent: #22D3EE; --accent-2: #F59E0B;
+  --pos: #22D3EE; --neg: #F59E0B; --ok: #34D399;
+  --head: 'Space Grotesk', system-ui, sans-serif; --head-w: 500; --head-track: -0.02em;
+  --body: 'IBM Plex Sans', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+[data-theme="siena"] {
+  --bg: #F4EDE1; --surface: #EADFCC; --fg: #2B2118; --muted: #74624F; --line: #D8C8AE;
+  --accent: #B5502F; --accent-2: #1E1E1E;
+  --pos: #2B2118; --neg: #B5502F; --ok: #4E7A3A;
+  --head: 'IBM Plex Serif', Georgia, serif; --head-w: 600; --head-track: -0.01em;
+  --body: 'IBM Plex Sans', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+}

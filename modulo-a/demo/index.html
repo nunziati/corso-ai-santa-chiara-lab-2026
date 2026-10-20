@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo — Fondamenti di IA</title>
+<link rel="stylesheet" href="../comune/demo.css">
+<style>
+  .list { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 28px; }
+  .list h2 { font-family: var(--head); font-weight: var(--head-w); font-size: 20px; margin: 0 0 8px; }
+  .list ol, .list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .list a.item { display: grid; grid-template-columns: 1fr; gap: 4px 12px; padding: 14px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--fg); }
+  .list a.item .k { font-family: var(--mono); color: var(--accent); font-size: 14px; padding-top: 3px; }
+  .list a.item b { font-size: 19px; font-weight: 600; }
+  .list a.item span { color: var(--muted); font-size: 15px; }
+</style>
+</head>
+<body>
+<main class="list">
+  <header class="demo-head">
+    <div class="kicker">AI for Future · Modulo A</div>
+    <h1>Le demo della giornata</h1>
+    <p>Funzionano dal telefono. Tocca, trascina, sbaglia: non si rompe niente.</p>
+  </header>
+
+  <section>
+    <h2>Le nostre</h2>
+    <ol>
+      <li><a class="item" href="percettrone.html"><b>Sii tu il percettrone</b><span>Separa piatti e bottiglie a mano, poi guarda l'algoritmo.</span></a></li>
+      <li><a class="item" href="gradiente.html"><b>Imparare è scendere a valle</b><span>La discesa del gradiente e il learning rate.</span></a></li>
+      <li><a class="item" href="overfitting.html"><b>Lo studente che impara a memoria</b><span>Complessità, errore sugli esempi ed errore su dati nuovi.</span></a></li>
+      <li><a class="item" href="labirinto.html"><b>Imparare per tentativi</b><span>Un robot impara il labirinto con premi e penalità.</span></a></li>
+      <li><a class="item" href="soglia.html"><b>Dove mettere la soglia?</b><span>Falsi positivi e falsi negativi in uno screening.</span></a></li>
+      <li><a class="item" href="bias.html"><b>Il modello impara chi vede</b><span>Cosa succede quando un gruppo è raro nei dati.</span></a></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Di altri, da provare</h2>
+    <ul>
+      <li><a class="item" href="https://quickdraw.withgoogle.com/" target="_blank" rel="noopener"><b>Quick, Draw!</b><span>Google. Disegna in 20 secondi, una rete neurale indovina.</span></a></li>
+      <li><a class="item" href="https://playground.tensorflow.org/" target="_blank" rel="noopener"><b>TensorFlow Playground</b><span>Costruisci una rete neurale e guardala imparare.</span></a></li>
+      <li><a class="item" href="https://poloclub.github.io/cnn-explainer/" target="_blank" rel="noopener"><b>CNN Explainer</b><span>Cosa "vede" una rete che riconosce immagini, strato per strato.</span></a></li>
+      <li><a class="item" href="https://www.survivalofthebestfit.com/" target="_blank" rel="noopener"><b>Survival of the Best Fit</b><span>Fai il selezionatore del personale, poi un'IA impara da te.</span></a></li>
+      <li><a class="item" href="https://openai.com/index/emergent-tool-use/" target="_blank" rel="noopener"><b>Hide and Seek</b><span>OpenAI, 2019. Agenti che inventano strategie giocando a nascondino.</span></a></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

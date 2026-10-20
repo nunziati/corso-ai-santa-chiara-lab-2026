@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prova temi — Modulo A</title>
+<link rel="stylesheet" href="../../vendor/fonts/fonts.css">
+<style>
+  /* ---------- Temi ---------- */
+  [data-theme="editoriale"] {
+    --bg: #FBF8F3; --surface: #F2ECE2; --fg: #1A1A1A; --muted: #6B645B;
+    --accent: #E4572E; --accent-2: #2E5EAA; --line: #D9D0C3;
+    --head: 'Fraunces', Georgia, serif; --head-w: 600; --head-track: -0.02em;
+    --body: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', monospace;
+    --deco: none;
+  }
+  [data-theme="tech"] {
+    --bg: #FFFFFF; --surface: #F4F5FB; --fg: #0F172A; --muted: #5B6478;
+    --accent: #4F46E5; --accent-2: #06B6D4; --line: #E2E5F0;
+    --head: 'Space Grotesk', system-ui, sans-serif; --head-w: 700; --head-track: -0.03em;
+    --body: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', monospace;
+    --deco: linear-gradient(#EEF0F7 1px, transparent 1px) 0 0 / 100% 4cqw,
+            linear-gradient(90deg, #EEF0F7 1px, transparent 1px) 0 0 / 4cqw 100%;
+  }
+  [data-theme="lab"] {
+    --bg: #0B0F14; --surface: #131A22; --fg: #E6EDF3; --muted: #8B98A8;
+    --accent: #22D3EE; --accent-2: #F59E0B; --line: #223040;
+    --head: 'Space Grotesk', system-ui, sans-serif; --head-w: 500; --head-track: -0.02em;
+    --body: 'IBM Plex Sans', system-ui, sans-serif; --mono: 'JetBrains Mono', monospace;
+    --deco: radial-gradient(circle at 85% 15%, rgba(34,211,238,.10), transparent 40%);
+  }
+  [data-theme="siena"] {
+    --bg: #F4EDE1; --surface: #EADFCC; --fg: #2B2118; --muted: #74624F;
+    --accent: #B5502F; --accent-2: #1E1E1E; --line: #D8C8AE;
+    --head: 'IBM Plex Serif', Georgia, serif; --head-w: 600; --head-track: -0.01em;
+    --body: 'IBM Plex Sans', system-ui, sans-serif; --mono: 'JetBrains Mono', monospace;
+    --deco: none;
+  }
+
+  /* ---------- Pagina ---------- */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #2a2a2e; color: #eee;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  header.bar {
+    position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 8px;
+    align-items: center; padding: 12px 16px; background: #1c1c20; border-bottom: 1px solid #333;
+  }
+  header.bar h1 { font-size: 15px; font-weight: 600; margin: 0 12px 0 0; }
+  header.bar button {
+    font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 999px;
+    border: 1px solid #444; background: #2a2a2e; color: #ddd; cursor: pointer;
+  }
+  header.bar button[aria-pressed="true"] { background: #fff; color: #111; border-color: #fff; }
+  header.bar .hint { font-size: 13px; color: #999; margin-left: auto; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; display: grid; gap: 28px; }
+  .caption { font-size: 13px; color: #aaa; margin: 0 0 8px; }
+
+  /* ---------- Slide 16:9 ---------- */
+  .slide {
+    container-type: inline-size; aspect-ratio: 16 / 9; width: 100%;
+    background: var(--deco), var(--bg); color: var(--fg);
+    font-family: var(--body); border-radius: 6px; overflow: hidden; position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  }
+  .slide h2, .slide h3 {
+    font-family: var(--head); font-weight: var(--head-w); letter-spacing: var(--head-track);
+    margin: 0; line-height: 1.05;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 1.2cqw; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent);
+  }
+  .pad { position: absolute; inset: 6cqw 6.5cqw; display: flex; flex-direction: column; }
+
+  /* Fascia Balzana solo per Siena */
+  .balzana { display: none; position: absolute; left: 0; right: 0; top: 0; height: .9cqw; }
+  [data-theme="siena"] .balzana {
+    display: block; background: linear-gradient(to right, #fff 0 50%, #1E1E1E 50% 100%);
+  }
+  [data-theme="siena"] .slide { border-top: 0; }
+
+  /* Slide 1: titolo */
+  .s-title .pad { justify-content: flex-end; }
+  .s-title h2 { font-size: 6.4cqw; max-width: 80%; }
+  .s-title h2 em { font-style: normal; color: var(--accent); }
+  [data-theme="editoriale"] .s-title h2 em,
+  [data-theme="siena"] .s-title h2 em { font-style: italic; font-weight: 400; }
+  .s-title .sub { margin-top: 2.2cqw; font-size: 1.8cqw; color: var(--muted); }
+  .s-title .meta {
+    margin-top: 3.2cqw; padding-top: 1.6cqw; border-top: 1px solid var(--line);
+    display: flex; gap: 3cqw; font-size: 1.2cqw; color: var(--muted);
+  }
+  .s-title .meta b { color: var(--fg); font-weight: 600; }
+  .s-title .mark {
+    position: absolute; right: 6.5cqw; top: 6cqw; width: 18cqw; height: 18cqw;
+  }
+
+  /* Slide 2: neurone */
+  .s-neuron .pad { flex-direction: row; gap: 4cqw; align-items: center; }
+  .s-neuron .text { flex: 0 0 34%; }
+  .s-neuron h2 { font-size: 3.6cqw; margin-top: 1cqw; }
+  .s-neuron p { font-size: 1.6cqw; line-height: 1.45; color: var(--muted); margin: 2cqw 0 0; }
+  .s-neuron p b { color: var(--fg); }
+  .s-neuron svg { flex: 1; min-width: 0; width: 100%; height: 100%; overflow: visible; }
+  .s-neuron .formula {
+    margin-top: 2.4cqw; font-family: var(--mono); font-size: 1.6cqw; color: var(--fg);
+    background: var(--surface); padding: 1cqw 1.4cqw; border-radius: .6cqw; display: inline-block;
+  }
+
+  /* Slide 3: caso reale */
+  .s-case .pad { gap: 2.4cqw; }
+  .s-case h2 { font-size: 3.8cqw; max-width: 75%; }
+  .s-case .row { display: flex; gap: 4cqw; flex: 1; min-height: 0; }
+  .s-case .story { flex: 0 0 36%; font-size: 1.6cqw; line-height: 1.5; color: var(--muted); }
+  .s-case .story b { color: var(--fg); }
+  .s-case .src { margin-top: 1.4cqw; font-size: 1.2cqw; font-family: var(--mono); color: var(--muted); }
+  .bars { flex: 1; display: flex; align-items: flex-end; gap: 2.2cqw; padding-bottom: 3.2cqw; position: relative; }
+  .bars::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3.2cqw; border-top: 1px solid var(--line); }
+  .bar { flex: 1; position: relative; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; }
+  .bar .fill {
+    height: var(--h); background: var(--line); border-radius: .4cqw .4cqw 0 0;
+    transform: scaleY(0); transform-origin: 50% 100%;
+    transition: transform 1.4s cubic-bezier(.2,.8,.2,1);
+  }
+  .bar.hot .fill { background: var(--accent); }
+  .bar .val {
+    font-family: var(--head); font-weight: var(--head-w); font-size: 2.6cqw; margin-bottom: .6cqw;
+    opacity: 0; transition: opacity .6s .9s;
+  }
+  .bar.hot .val { color: var(--accent); }
+  .bar .lab { position: absolute; bottom: -3.2cqw; height: 3.2cqw; display: flex; align-items: center; font-size: 1.2cqw; color: var(--muted); line-height: 1.15; }
+  .play .bar .fill { transform: scaleY(1); }
+  .play .bar .val { opacity: 1; }
+
+  /* ---------- Animazione neurone ---------- */
+  .edge { stroke: var(--line); fill: none; stroke-linecap: round; }
+  .pulse { stroke: var(--accent); fill: none; stroke-linecap: round; stroke-dasharray: 3 200; stroke-dashoffset: 3; animation: travel 4s infinite; }
+  .node-in { fill: var(--surface); stroke: var(--fg); stroke-width: 1.5; }
+  .node-in-text { font-family: var(--mono); font-size: 13px; fill: var(--fg); text-anchor: middle; dominant-baseline: central; }
+  .w-text { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+  .soma { fill: var(--surface); stroke: var(--fg); stroke-width: 1.5; }
+  .gauge-bg { fill: var(--bg); stroke: var(--line); }
+  .gauge { fill: var(--accent-2); transform-origin: 0 100%; transform-box: fill-box; animation: fillup 4s infinite; }
+  .thresh { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 3 3; }
+  .thresh-text { font-family: var(--mono); font-size: 10px; fill: var(--accent); }
+  .out { fill: var(--surface); stroke: var(--fg); stroke-width: 1.5; animation: fire 4s infinite; }
+  .out-pulse { stroke: var(--accent); stroke-width: 3; fill: none; stroke-dasharray: 6 200; stroke-dashoffset: 6; animation: emit 4s infinite; }
+  .lbl { font-family: var(--body); font-size: 12px; fill: var(--muted); text-anchor: middle; }
+
+  @keyframes travel { 0% { stroke-dashoffset: 3; opacity: 1; } 30% { stroke-dashoffset: -150; opacity: 1; } 31%, 100% { opacity: 0; } }
+  @keyframes fillup { 0%, 25% { transform: scaleY(0); } 55%, 85% { transform: scaleY(1); } 100% { transform: scaleY(0); } }
+  @keyframes fire { 0%, 55% { fill: var(--surface); } 60%, 85% { fill: var(--accent); } 100% { fill: var(--surface); } }
+  @keyframes emit { 0%, 58% { stroke-dashoffset: 6; opacity: 0; } 59% { opacity: 1; } 80% { stroke-dashoffset: -110; opacity: 1; } 81%, 100% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .pulse, .gauge, .out, .out-pulse { animation: none; } .gauge { transform: scaleY(1); } }
+
+  .notes { max-width: 1100px; font-size: 14px; line-height: 1.55; color: #bbb; }
+  .notes b { color: #fff; }
+</style>
+</head>
+<body data-theme="editoriale">
+<header class="bar">
+  <h1>Prova temi</h1>
+  <button data-set="editoriale" aria-pressed="true">a · Editoriale chiaro</button>
+  <button data-set="tech" aria-pressed="false">b · Tech chiaro</button>
+  <button data-set="lab" aria-pressed="false">c · Laboratorio scuro</button>
+  <button data-set="siena" aria-pressed="false">d · Siena</button>
+  <span class="hint">tasti 1–4 per cambiare</span>
+</header>
+
+<main>
+  <section>
+    <p class="caption">Slide 1 — titolo</p>
+    <div class="slide s-title">
+      <div class="balzana"></div>
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <g fill="none" stroke="var(--accent)" stroke-width="1.2">
+          <circle cx="20" cy="25" r="5"/><circle cx="20" cy="50" r="5"/><circle cx="20" cy="75" r="5"/>
+          <circle cx="55" cy="35" r="5"/><circle cx="55" cy="65" r="5"/>
+          <circle cx="85" cy="50" r="6" fill="var(--accent)"/>
+          <path d="M25 25L50 35M25 25L50 65M25 50L50 35M25 50L50 65M25 75L50 35M25 75L50 65M60 35L79 50M60 65L79 50" stroke="var(--line)"/>
+        </g>
+      </svg>
+      <div class="pad">
+        <div class="kicker">AI for Future · Modulo A</div>
+        <h2 style="margin-top:1.6cqw">Fondamenti di <em>Intelligenza Artificiale</em></h2>
+        <div class="sub">Come impara una macchina, e perché a volte impara la cosa sbagliata</div>
+        <div class="meta"><span><b>Giacomo Nunziati</b></span><span>Santa Chiara Lab · Università di Siena</span><span>21 ottobre 2026</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="caption">Slide 2 — concetto con animazione (il neurone artificiale)</p>
+    <div class="slide s-neuron">
+      <div class="balzana"></div>
+      <div class="pad">
+        <div class="text">
+          <div class="kicker">Blocco 2 · Il neurone</div>
+          <h2>Somma, confronta, decide</h2>
+          <p>Ogni ingresso arriva con un <b>peso</b>: quanto conta. Il neurone li somma e si accende solo se la somma supera la <b>soglia</b>.</p>
+          <div class="formula">uscita = 1 se Σ wᵢ·xᵢ ≥ soglia</div>
+        </div>
+        <svg viewBox="0 0 420 300" aria-label="Animazione di un neurone artificiale">
+          <!-- archi: lo spessore è il peso -->
+          <path class="edge" d="M60 60 L200 150" stroke-width="9"/>
+          <path class="edge" d="M60 150 L200 150" stroke-width="3"/>
+          <path class="edge" d="M60 240 L200 150" stroke-width="6"/>
+          <path class="pulse" d="M60 60 L200 150" stroke-width="9"/>
+          <path class="pulse" d="M60 150 L200 150" stroke-width="3"/>
+          <path class="pulse" d="M60 240 L200 150" stroke-width="6"/>
+          <text class="w-text" x="112" y="88">w₁ = 0,9</text>
+          <text class="w-text" x="112" y="142">w₂ = 0,2</text>
+          <text class="w-text" x="112" y="222">w₃ = 0,6</text>
+          <circle class="node-in" cx="48" cy="60" r="20"/><text class="node-in-text" x="48" y="60">x₁</text>
+          <circle class="node-in" cx="48" cy="150" r="20"/><text class="node-in-text" x="48" y="150">x₂</text>
+          <circle class="node-in" cx="48" cy="240" r="20"/><text class="node-in-text" x="48" y="240">x₃</text>
+          <!-- corpo con indicatore della somma -->
+          <rect class="soma" x="196" y="100" width="70" height="100" rx="14"/>
+          <rect class="gauge-bg" x="214" y="112" width="34" height="76" rx="4"/>
+          <rect class="gauge" x="214" y="112" width="34" height="76" rx="4"/>
+          <line class="thresh" x1="206" x2="256" y1="136" y2="136"/>
+          <text class="thresh-text" x="270" y="139">soglia</text>
+          <text class="lbl" x="231" y="222">Σ</text>
+          <!-- uscita -->
+          <path class="edge" d="M266 150 L360 150" stroke-width="3"/>
+          <path class="out-pulse" d="M266 150 L360 150"/>
+          <circle class="out" cx="378" cy="150" r="18"/>
+          <text class="lbl" x="378" y="190">uscita</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="caption">Slide 3 — caso reale (la barra si anima quando entra in vista)</p>
+    <div class="slide s-case" id="case">
+      <div class="balzana"></div>
+      <div class="pad">
+        <div class="kicker">Blocco 4 · Casi reali · Gender Shades, 2018</div>
+        <h2>Lo stesso software sbaglia molto di più su alcune persone</h2>
+        <div class="row">
+          <div class="story">
+            Tre sistemi commerciali di riconoscimento del genere da una foto. Su uomini con pelle chiara l'errore è quasi nullo; su donne con pelle scura arriva a <b>un caso su tre</b>.
+            <br><br>Il meccanismo: nei dati di addestramento quel gruppo era <b>raro</b>.
+            <div class="src">Buolamwini &amp; Gebru, FAT* 2018</div>
+          </div>
+          <div class="bars">
+            <div class="bar" style="--h:2.3%"><div class="val">0,8%</div><div class="fill"></div><div class="lab">uomini<br>pelle chiara</div></div>
+            <div class="bar" style="--h:20%"><div class="val">≈7%</div><div class="fill"></div><div class="lab">donne<br>pelle chiara</div></div>
+            <div class="bar" style="--h:35%"><div class="val">≈12%</div><div class="fill"></div><div class="lab">uomini<br>pelle scura</div></div>
+            <div class="bar hot" style="--h:100%"><div class="val">34,7%</div><div class="fill"></div><div class="lab">donne<br>pelle scura</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <p><b>Cosa guardare.</b> Leggibilità del testo piccolo da lontano, contrasto dell'arancio/indaco/ciano/terracotta sul fondo, carattere dei titoli (serif o sans), quanto "pesa" la decorazione. Si possono mescolare: per esempio i titoli di (a) con l'accento di (d).</p>
+    <p><b>Nota sui numeri della slide 3.</b> 0,8% e 34,7% sono i valori peggiori riportati nel paper; le due barre intermedie sono indicative e vanno verificate prima di usarle nel deck.</p>
+  </section>
+</main>
+
+<script>
+  const btns = document.querySelectorAll('[data-set]');
+  function setTheme(t) {
+    document.body.dataset.theme = t;
+    document.querySelectorAll('.slide').forEach(s => s.dataset.theme = t);
+    btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.set === t)));
+    try { localStorage.setItem('tema', t); } catch (e) {}
+  }
+  btns.forEach(b => b.addEventListener('click', () => setTheme(b.dataset.set)));
+  document.addEventListener('keydown', e => {
+    const i = ['1','2','3','4'].indexOf(e.key);
+    if (i >= 0) setTheme(btns[i].dataset.set);
+  });
+  let saved = new URLSearchParams(location.search).get('tema');
+  if (!saved) { try { saved = localStorage.getItem('tema'); } catch (e) {} }
+  setTheme(saved || 'editoriale');
+
+  // barre del caso: si animano quando entrano in vista, e ripartono al cambio tema
+  const cs = document.getElementById('case');
+  new IntersectionObserver(es => es.forEach(e => cs.classList.toggle('play', e.isIntersecting)), { threshold: .4 }).observe(cs);
+  btns.forEach(b => b.addEventListener('click', () => { cs.classList.remove('play'); requestAnimationFrame(() => setTimeout(() => cs.classList.add('play'), 50)); }));
+</script>
+</body>
+</html>

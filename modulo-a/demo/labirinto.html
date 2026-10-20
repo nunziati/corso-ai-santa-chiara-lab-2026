@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imparare per tentativi</title>
+<link rel="stylesheet" href="../comune/demo.css">
+<style>
+  .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+  .seg button { padding: 8px 12px; min-height: 40px; font-size: 14px; }
+  .msg { font-size: 15px; margin: 0; min-height: 2.9em; }
+  .msg b { color: var(--accent); }
+  .stage { max-width: min(640px, 68vh); width: 100%; justify-self: center; }
+</style>
+</head>
+<body>
+<main class="demo">
+  <header class="demo-head">
+    <div class="kicker">Demo · Apprendimento per rinforzo</div>
+    <h1>Imparare per tentativi</h1>
+    <p>Il robot non conosce il labirinto e nessuno gli dice la strada. Riceve solo un <b>premio</b> quando arriva alla bandiera e una <b>penalità</b> se cade nella buca. Partita dopo partita, i colori mostrano quanto "vale" ogni casella secondo lui.</p>
+  </header>
+
+  <section class="stage"><canvas id="cv" aria-label="Labirinto con il robot, la bandiera e la buca"></canvas></section>
+
+  <section class="panel">
+    <div class="stats">
+      <div class="stat"><div class="n" id="epN">0</div><div class="t">partite giocate</div></div>
+      <div class="stat"><div class="n" id="lenN">–</div><div class="t">passi nell'ultima partita</div></div>
+      <div class="stat hot"><div class="n" id="winN">–</div><div class="t">arrivi nelle ultime 20</div></div>
+    </div>
+    <p class="msg" id="msg"></p>
+
+    <div class="buttons">
+      <button class="primary" id="play">Avvia</button>
+      <button id="reset">Dimentica tutto</button>
+    </div>
+    <div class="seg" role="group" aria-label="Velocità">
+      <button data-speed="slow" aria-pressed="true">Una partita alla volta</button>
+      <button data-speed="fast" aria-pressed="false">Veloce</button>
+    </div>
+    <div class="control">
+      <label for="eps"><span>Voglia di esplorare</span> <output id="epso"></output></label>
+      <input type="range" id="eps" min="0" max="0.6" step="0.02" value="0.2">
+    </div>
+    <p class="note">Tocca una casella per aggiungere o togliere un muro, anche mentre il robot sta imparando. Con voglia di esplorare a zero, il robot rifà sempre la prima strada che ha trovato, anche se non è la migliore.</p>
+    <a class="back" href="./">← tutte le demo</a>
+  </section>
+</main>
+
+<script>
+(() => {
+  const C = 7, R = 7;
+  const START = [0, 6], GOAL = [6, 0], PIT = [4, 2];
+  const INIT_WALLS = ['1,1', '1,2', '1,3', '1,4', '3,3', '3,4', '3,5', '3,6', '5,1', '5,2', '5,3', '4,5', '5,5'];
+  const ACT = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // su, destra, giù, sinistra
+  const ALPHA = 0.5, GAMMA = 0.95, STEP_R = -0.1, GOAL_R = 10, PIT_R = -10, MAXSTEPS = 120;
+
+  let walls = new Set(INIT_WALLS), Q, ep = 0, results = [], lastLen = null;
+  let agent = START.slice(), path = [], playing = false, speed = 'slow', raf = null, steps = 0;
+  const key = (x, y) => x + ',' + y;
+  const resetQ = () => { Q = {}; for (let x = 0; x < C; x++) for (let y = 0; y < R; y++) Q[key(x, y)] = [0, 0, 0, 0]; };
+  resetQ();
+
+  const isGoal = (x, y) => x === GOAL[0] && y === GOAL[1];
+  const isPit = (x, y) => x === PIT[0] && y === PIT[1];
+  function move(x, y, a) {
+    const nx = x + ACT[a][0], ny = y + ACT[a][1];
+    if (nx < 0 || ny < 0 || nx >= C || ny >= R || walls.has(key(nx, ny))) return [x, y];
+    return [nx, ny];
+  }
+  function choose(x, y) {
+    const eps = parseFloat($('eps').value), q = Q[key(x, y)];
+    if (Math.random() < eps) return Math.floor(Math.random() * 4);
+    const m = Math.max(...q), best = [0, 1, 2, 3].filter(a => q[a] === m);
+    return best[Math.floor(Math.random() * best.length)];
+  }
+  // un passo di Q-learning; restituisce 'goal', 'pit', 'timeout' oppure null
+  function tick() {
+    const [x, y] = agent, a = choose(x, y), [nx, ny] = move(x, y, a);
+    let r = STEP_R, end = null;
+    if (isGoal(nx, ny)) { r = GOAL_R; end = 'goal'; } else if (isPit(nx, ny)) { r = PIT_R; end = 'pit'; }
+    const next = end ? 0 : Math.max(...Q[key(nx, ny)]);
+    const q = Q[key(x, y)];
+    q[a] += ALPHA * (r + GAMMA * next - q[a]);
+    agent = [nx, ny]; steps++; path.push(agent);
+    if (!end && steps >= MAXSTEPS) end = 'timeout';
+    return end;
+  }
+  function endEpisode(end) {
+    ep++; lastLen = steps; results.push(end === 'goal'); if (results.length > 20) results.shift();
+    agent = START.slice(); steps = 0; path = [agent];
+  }
+
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  let S = 0, cell = 0;
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    S = cv.parentElement.getBoundingClientRect().width; cell = S / C;
+    cv.width = S * dpr; cv.height = S * dpr; cv.style.height = S + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
+  }
+  const hex = h => { const n = parseInt(h.replace('#', ''), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+  const mix = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
+
+  function draw() {
+    if (!S) return;
+    const surf = hex(css('--surface')), pos = hex(css('--pos')), neg = hex(css('--neg')), fg = css('--fg'), line = css('--line');
+    for (let x = 0; x < C; x++) for (let y = 0; y < R; y++) {
+      const k = key(x, y), px = x * cell, py = y * cell;
+      if (walls.has(k)) { ctx.fillStyle = fg; ctx.fillRect(px, py, cell, cell); continue; }
+      const v = Math.max(...Q[k]);
+      ctx.fillStyle = v >= 0 ? mix(surf, pos, Math.min(1, v / GOAL_R) * 0.85) : mix(surf, neg, Math.min(1, -v / 6) * 0.85);
+      if (isGoal(x, y) || isPit(x, y)) ctx.fillStyle = mix(surf, isGoal(x, y) ? pos : neg, 0.3);
+      ctx.fillRect(px, py, cell, cell);
+      ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.strokeRect(px + .5, py + .5, cell - 1, cell - 1);
+      // freccia della mossa migliore, solo dove il robot ha già imparato qualcosa
+      const q = Q[k], m = Math.max(...q);
+      if (!isGoal(x, y) && !isPit(x, y) && q.some(v => v !== 0) && m > 0.05) {
+        const a = q.indexOf(m), cx = px + cell / 2, cy = py + cell / 2, L = cell * .22;
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate([-Math.PI / 2, 0, Math.PI / 2, Math.PI][a]);
+        ctx.strokeStyle = fg; ctx.globalAlpha = .55; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-L, 0); ctx.lineTo(L, 0); ctx.moveTo(L - 6, -5); ctx.lineTo(L, 0); ctx.lineTo(L - 6, 5); ctx.stroke(); ctx.restore();
+      }
+    }
+    ctx.font = `${Math.round(cell * .5)}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('🏁', GOAL[0] * cell + cell / 2, GOAL[1] * cell + cell / 2);
+    ctx.fillText('🕳️', PIT[0] * cell + cell / 2, PIT[1] * cell + cell / 2);
+    ctx.globalAlpha = .35; ctx.fillText('🚪', START[0] * cell + cell / 2, START[1] * cell + cell / 2); ctx.globalAlpha = 1;
+
+    if (speed === 'slow' && path.length > 1) {
+      ctx.strokeStyle = css('--accent'); ctx.lineWidth = 3; ctx.globalAlpha = .6; ctx.beginPath();
+      path.forEach(([x, y], i) => { const p = [x * cell + cell / 2, y * cell + cell / 2]; i ? ctx.lineTo(...p) : ctx.moveTo(...p); });
+      ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    ctx.fillText('🤖', agent[0] * cell + cell / 2, agent[1] * cell + cell / 2);
+  }
+
+  function ui() {
+    $('epN').textContent = ep;
+    $('lenN').textContent = lastLen ?? '–';
+    $('winN').textContent = results.length ? `${results.filter(Boolean).length}/${results.length}` : '–';
+    $('epso').textContent = Math.round(parseFloat($('eps').value) * 100) + '%';
+    let m;
+    if (ep === 0) m = 'All\'inizio il robot si muove a caso: non sa niente.';
+    else if (ep < 15) m = 'Le prime partite sono lunghe e casuali. Quando trova la bandiera, il premio <b>si propaga all\'indietro</b> lungo la strada fatta.';
+    else if (results.filter(Boolean).length < 15) m = 'Il robot comincia a preferire le caselle "calde" che portano alla bandiera, ed evita quelle vicino alla buca.';
+    else m = 'Ora va dritto alla bandiera. Nessuno gli ha detto la strada: l\'ha <b>scoperta</b> provando.';
+    $('msg').innerHTML = m;
+  }
+
+  let last = 0;
+  function loop(now) {
+    if (!playing) return;
+    if (speed === 'fast') {
+      for (let e = 0; e < 25; e++) { let end; while (!(end = tick())); endEpisode(end); }
+      draw(); ui();
+    } else if (now - last > 90) {
+      last = now;
+      const end = tick();
+      draw();
+      if (end) { endEpisode(end); ui(); }
+    }
+    raf = requestAnimationFrame(loop);
+  }
+  function stop() { playing = false; cancelAnimationFrame(raf); $('play').textContent = 'Avvia'; }
+  $('play').onclick = () => { if (playing) return stop(); playing = true; $('play').textContent = 'Pausa'; raf = requestAnimationFrame(loop); };
+  $('reset').onclick = () => { stop(); resetQ(); ep = 0; results = []; lastLen = null; agent = START.slice(); steps = 0; path = [agent]; walls = new Set(INIT_WALLS); draw(); ui(); };
+  document.querySelectorAll('[data-speed]').forEach(b => b.onclick = () => {
+    speed = b.dataset.speed;
+    document.querySelectorAll('[data-speed]').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+    draw();
+  });
+  $('eps').addEventListener('input', ui);
+  cv.addEventListener('click', e => {
+    const r = cv.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / (r.width / C)), y = Math.floor((e.clientY - r.top) / (r.height / R));
+    const k = key(x, y);
+    if (isGoal(x, y) || isPit(x, y) || (x === START[0] && y === START[1]) || (x === agent[0] && y === agent[1])) return;
+    walls.has(k) ? walls.delete(k) : walls.add(k);
+    draw();
+  });
+
+  path = [agent];
+  new ResizeObserver(resize).observe(cv.parentElement);
+  ui();
+})();
+</script>
+</body>
+</html>

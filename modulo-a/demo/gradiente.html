@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scendere a valle</title>
+<link rel="stylesheet" href="../comune/demo.css">
+<style>
+  .msg { font-size: 15px; min-height: 2.9em; }
+  .msg b { color: var(--accent); }
+  .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+  .seg button { padding: 8px 12px; min-height: 40px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main class="demo">
+  <header class="demo-head">
+    <div class="kicker">Demo · Discesa del gradiente</div>
+    <h1>Imparare è scendere a valle</h1>
+    <p>La curva è l'errore del modello al variare di un peso. La pallina guarda solo la pendenza sotto di sé e fa un passo in discesa. Quanto lungo? Lo decide il <b>learning rate</b>.</p>
+  </header>
+
+  <section class="stage"><canvas id="cv" aria-label="Curva dell'errore con una pallina che scende"></canvas></section>
+
+  <section class="panel">
+    <div class="stats">
+      <div class="stat"><div class="n" id="stepN">0</div><div class="t">passi fatti</div></div>
+      <div class="stat hot"><div class="n" id="errN">0</div><div class="t">errore attuale</div></div>
+    </div>
+    <p class="msg" id="msg"></p>
+
+    <div class="control">
+      <label for="lr"><span>Learning rate (lunghezza del passo)</span> <output id="lro"></output></label>
+      <input type="range" id="lr" min="0.05" max="2.2" step="0.05" value="0.3">
+    </div>
+
+    <div class="buttons">
+      <button class="primary" id="play">Avvia</button>
+      <button id="step">Un passo</button>
+      <button id="reset">Ricomincia</button>
+    </div>
+
+    <div class="seg" role="group" aria-label="Forma della curva">
+      <button data-curve="0" aria-pressed="true">Una valle</button>
+      <button data-curve="1" aria-pressed="false">Due valli</button>
+    </div>
+
+    <p class="note">Tocca la curva per mettere la pallina in un altro punto. Prova un learning rate piccolo (0,1), medio (0,8), grande (1,8) e troppo grande (2,1).</p>
+    <a class="back" href="./">← tutte le demo</a>
+  </section>
+</main>
+
+<script>
+(() => {
+  const CURVES = [
+    { f: x => 0.5 * (x - 1) ** 2 + 0.3, df: x => x - 1, x0: -3.2, X: [-4, 6], Y: [0, 12] },
+    { f: x => 0.05 * x ** 4 - 0.5 * x ** 2 + 0.3 * x + 2.2, df: x => 0.2 * x ** 3 - x + 0.3, x0: 3.6, X: [-4, 4], Y: [0, 6] }
+  ];
+  let ci = 0, x = CURVES[0].x0, steps = 0, trail = [], playing = false, timer = null, anim = null, out = false;
+
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const C = () => CURVES[ci];
+
+  let W = 0, H = 0; const pad = { l: 44, r: 16, t: 16, b: 38 };
+  function resize() {
+    W = cv.parentElement.getBoundingClientRect().width; H = Math.round(Math.min(W * 0.66, window.innerHeight * 0.55));
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
+  }
+  const sx = v => pad.l + (v - C().X[0]) / (C().X[1] - C().X[0]) * (W - pad.l - pad.r);
+  const sy = v => H - pad.b - (v - C().Y[0]) / (C().Y[1] - C().Y[0]) * (H - pad.t - pad.b);
+  const ix = px => C().X[0] + (px - pad.l) / (W - pad.l - pad.r) * (C().X[1] - C().X[0]);
+
+  function draw(bx = x) {
+    if (!W) return;
+    const fg = css('--fg'), muted = css('--muted'), line = css('--line'), acc = css('--accent'), acc2 = css('--accent-2');
+    ctx.fillStyle = css('--surface'); ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = line; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, sy(C().Y[0])); ctx.lineTo(W - pad.r, sy(C().Y[0])); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, H - pad.b); ctx.stroke();
+    ctx.fillStyle = muted; ctx.font = `13px ${css('--body')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('valore del peso →', (pad.l + W - pad.r) / 2, H - 4);
+    ctx.save(); ctx.translate(14, (pad.t + H - pad.b) / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = 'top'; ctx.fillText('errore →', 0, 0); ctx.restore();
+
+    // curva
+    ctx.save(); ctx.beginPath(); ctx.rect(pad.l, pad.t, W - pad.l - pad.r, H - pad.t - pad.b); ctx.clip();
+    ctx.strokeStyle = fg; ctx.lineWidth = 3; ctx.beginPath();
+    for (let px = pad.l; px <= W - pad.r; px += 2) { const v = ix(px); px === pad.l ? ctx.moveTo(px, sy(C().f(v))) : ctx.lineTo(px, sy(C().f(v))); }
+    ctx.stroke();
+
+    // scia dei passi
+    for (let i = 1; i < trail.length; i++) {
+      const a = trail[i - 1], b = trail[i];
+      ctx.strokeStyle = acc2; ctx.globalAlpha = 0.25 + 0.75 * i / trail.length; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(sx(a), sy(C().f(a)) - 10); ctx.lineTo(sx(b), sy(C().f(b)) - 10); ctx.stroke();
+      ctx.fillStyle = acc2; ctx.beginPath(); ctx.arc(sx(a), sy(C().f(a)), 3.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // pendenza sotto la pallina
+    const y = C().f(bx), g = C().df(bx), span = (C().X[1] - C().X[0]) * 0.09;
+    ctx.strokeStyle = acc; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(sx(bx - span), sy(y - g * span)); ctx.lineTo(sx(bx + span), sy(y + g * span)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+
+    // pallina
+    if (bx >= C().X[0] && bx <= C().X[1] && y <= C().Y[1]) {
+      ctx.fillStyle = acc; ctx.beginPath(); ctx.arc(sx(bx), sy(y) - 11, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = muted; ctx.font = `12px ${css('--mono')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(`pendenza ${g >= 0 ? '+' : ''}${g.toFixed(2)}`, sx(bx), sy(y) - 26);
+    }
+  }
+
+  function regime(lr) {
+    if (ci === 1) return 'Con due valli la pallina si ferma nella prima valle che trova: <b>non sa</b> se ne esiste una più profonda.';
+    if (lr < 0.3) return 'Passi piccoli: scende sicura ma <b>lenta</b>.';
+    if (lr <= 1.05) return 'Passi giusti: arriva in fondo in <b>pochi passi</b>.';
+    if (lr < 2) return 'Passi lunghi: <b>scavalca</b> il fondo e rimbalza da una parte all\'altra.';
+    return 'Passi troppo lunghi: a ogni rimbalzo sale invece di scendere. <b>Esplode.</b>';
+  }
+
+  function ui() {
+    const lr = parseFloat($('lr').value);
+    $('lro').textContent = lr.toFixed(2);
+    $('stepN').textContent = steps;
+    $('errN').textContent = out ? '∞' : C().f(x).toFixed(2);
+    $('msg').innerHTML = out ? 'La pallina è <b>schizzata fuori</b> dal grafico: learning rate troppo grande.' : regime(lr);
+  }
+
+  function step() {
+    if (anim || out) return false;
+    const lr = parseFloat($('lr').value), from = x, to = x - lr * C().df(x);
+    if (Math.abs(to - from) < 1e-3) { stop(); return false; }
+    steps++; trail.push(from);
+    if (trail.length > 40) trail.shift();
+    const t0 = performance.now(), dur = 380;
+    anim = true;
+    const go = now => {
+      const k = Math.min(1, (now - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      draw(from + (to - from) * e);
+      if (k < 1) requestAnimationFrame(go);
+      else {
+        x = to; anim = null;
+        if (x < C().X[0] - 1 || x > C().X[1] + 1 || C().f(x) > C().Y[1] * 3) { out = true; stop(); }
+        draw(); ui();
+      }
+    };
+    requestAnimationFrame(go);
+    return true;
+  }
+  function stop() { playing = false; clearInterval(timer); $('play').textContent = 'Avvia'; }
+  function reset(nx = C().x0) { stop(); x = nx; steps = 0; trail = []; out = false; draw(); ui(); }
+
+  $('play').onclick = () => {
+    if (playing) return stop();
+    if (out) reset();
+    playing = true; $('play').textContent = 'Pausa';
+    timer = setInterval(() => { if (!anim && !step() && !anim) stop(); }, 450);
+  };
+  $('step').onclick = () => { stop(); step(); };
+  $('reset').onclick = () => reset();
+  $('lr').addEventListener('input', ui);
+  document.querySelectorAll('[data-curve]').forEach(b => b.onclick = () => {
+    ci = parseInt(b.dataset.curve, 10);
+    document.querySelectorAll('[data-curve]').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+    reset();
+  });
+  cv.addEventListener('click', e => {
+    const r = cv.getBoundingClientRect(), v = ix(e.clientX - r.left);
+    if (v >= C().X[0] && v <= C().X[1]) reset(v);
+  });
+
+  new ResizeObserver(resize).observe(cv.parentElement);
+  ui();
+})();
+</script>
+</body>
+</html>

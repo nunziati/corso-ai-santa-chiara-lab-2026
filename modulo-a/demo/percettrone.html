@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sii tu il percettrone</title>
+<link rel="stylesheet" href="../comune/demo.css">
+<style>
+  .formula { font-family: var(--mono); font-size: 14px; background: var(--surface); border-radius: 10px; padding: 10px 12px; line-height: 1.6; }
+  .formula b { color: var(--accent); font-weight: 600; }
+  .addmode { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 14px; color: var(--muted); }
+  .addmode button { padding: 8px 12px; min-height: 40px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main class="demo">
+  <header class="demo-head">
+    <div class="kicker">Demo · Il percettrone</div>
+    <h1>Sii tu il percettrone</h1>
+    <p>Ogni punto è un oggetto misurato: diametro e altezza. Muovi i cursori finché la retta separa piatti e bottiglie senza errori. Poi premi <b>Impara da solo</b> e guarda come ci arriva l'algoritmo.</p>
+  </header>
+
+  <section class="stage" id="stage"><canvas id="cv" aria-label="Piano diametro-altezza con piatti, bottiglie e retta di decisione"></canvas></section>
+
+  <section class="panel">
+    <div class="stats">
+      <div class="stat hot" id="errBox"><div class="n" id="errN">0</div><div class="t">oggetti classificati male</div></div>
+      <div class="stat"><div class="n" id="updN">0</div><div class="t">correzioni fatte dall'algoritmo</div></div>
+    </div>
+
+    <div class="formula" id="formula"></div>
+
+    <div class="control">
+      <label for="wD"><span>Peso del diametro (w<sub>D</sub>)</span> <output id="wDo"></output></label>
+      <input type="range" id="wD" min="-2" max="2" step="0.01">
+    </div>
+    <div class="control">
+      <label for="wA"><span>Peso dell'altezza (w<sub>A</sub>)</span> <output id="wAo"></output></label>
+      <input type="range" id="wA" min="-2" max="2" step="0.01">
+    </div>
+    <div class="control">
+      <label for="b">Spostamento (b) <output id="bo"></output></label>
+      <input type="range" id="b" min="-30" max="30" step="0.1">
+    </div>
+
+    <div class="buttons">
+      <button class="primary" id="play">Impara da solo</button>
+      <button id="step">Un passo</button>
+      <button id="reset">Ricomincia</button>
+    </div>
+
+    <div class="addmode">
+      Tocca il grafico per aggiungere:
+      <button data-add="-1" aria-pressed="false">un piatto</button>
+      <button data-add="1" aria-pressed="false">una bottiglia</button>
+    </div>
+
+    <div class="legend">
+      <span><i class="dot" style="background:var(--neg)"></i>piatto</span>
+      <span><i class="dot" style="background:var(--pos);border-radius:2px"></i>bottiglia</span>
+      <span>anello = errore</span>
+    </div>
+    <p class="note">La regola del percettrone: prendi un oggetto classificato male e sposta un poco i pesi nella direzione che lo avrebbe classificato bene. Ripeti finché non ci sono più errori.</p>
+    <a class="back" href="./">← tutte le demo</a>
+  </section>
+</main>
+
+<script>
+(() => {
+  // Dataset della presentazione: diametro (cm), altezza (cm). -1 = piatto, +1 = bottiglia.
+  const BASE = [
+    [16.83,4.91,-1],[22.43,4.33,-1],[15.52,4.82,-1],[28.64,4.68,-1],[18.88,3.79,-1],
+    [24.94,4.77,-1],[19.68,2.27,-1],[22.8,2.59,-1],[23.2,2.14,-1],[17.77,2.98,-1],
+    [6.94,26.58,1],[6.36,17.98,1],[9.14,15.08,1],[6.78,27.23,1],[6.4,25.6,1],
+    [7.71,25.94,1],[5.7,26.57,1],[9.01,16.11,1],[5.37,20.38,1],[9.93,16.74,1]
+  ];
+  const START = { wD: 1, wA: -1, b: 10 };
+  const LR = 0.01;
+  const X0 = 0, X1 = 32, Y0 = 0, Y1 = 30;
+
+  let data = BASE.map(p => p.slice());
+  let w = { ...START };
+  let updates = 0, playing = false, timer = null, addClass = 0;
+  let highlight = null, tween = null;
+
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  let W = 0, H = 0, pad = { l: 46, r: 14, t: 14, b: 40 };
+  function resize() {
+    const r = cv.parentElement.getBoundingClientRect();
+    W = r.width; H = Math.round(Math.min(W * 0.8, window.innerHeight * 0.62));
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+  const sx = x => pad.l + (x - X0) / (X1 - X0) * (W - pad.l - pad.r);
+  const sy = y => H - pad.b - (y - Y0) / (Y1 - Y0) * (H - pad.t - pad.b);
+  const ix = px => X0 + (px - pad.l) / (W - pad.l - pad.r) * (X1 - X0);
+  const iy = py => Y0 + (H - pad.b - py) / (H - pad.t - pad.b) * (Y1 - Y0);
+
+  const score = (p, ww = w) => ww.wD * p[0] + ww.wA * p[1] + ww.b;
+  const predict = (p, ww = w) => score(p, ww) >= 0 ? 1 : -1;
+  const errors = () => data.filter(p => predict(p) !== p[2]);
+
+  function hexA(hex, a) {
+    const h = hex.replace('#', ''); const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+    return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+  }
+
+  function draw() {
+    if (!W) return;
+    const pos = css('--pos'), neg = css('--neg'), fg = css('--fg'), muted = css('--muted'), line = css('--line'), surf = css('--surface');
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = surf; ctx.fillRect(0, 0, W, H);
+
+    // regioni: colore tenue dove il modello dice "bottiglia" o "piatto"
+    const step = 6;
+    for (let px = pad.l; px < W - pad.r; px += step) {
+      for (let py = pad.t; py < H - pad.b; py += step) {
+        const c = predict([ix(px + step / 2), iy(py + step / 2)]) === 1 ? pos : neg;
+        ctx.fillStyle = hexA(c, 0.13); ctx.fillRect(px, py, step, step);
+      }
+    }
+
+    // assi e griglia
+    ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.fillStyle = muted;
+    ctx.font = `12px ${css('--mono')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let x = 0; x <= 30; x += 5) { ctx.beginPath(); ctx.moveTo(sx(x), sy(Y0)); ctx.lineTo(sx(x), sy(Y1)); ctx.stroke(); ctx.fillText(x, sx(x), sy(Y0) + 6); }
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let y = 0; y <= 30; y += 5) { ctx.beginPath(); ctx.moveTo(sx(X0), sy(y)); ctx.lineTo(sx(X1), sy(y)); ctx.stroke(); ctx.fillText(y, sx(X0) - 6, sy(y)); }
+    ctx.font = `13px ${css('--body')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('diametro (cm) →', (sx(X0) + sx(X1)) / 2, H - 2);
+    ctx.save(); ctx.translate(12, (sy(Y0) + sy(Y1)) / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = 'top'; ctx.fillText('altezza (cm) →', 0, 0); ctx.restore();
+
+    // retta di decisione wD*x + wA*y + b = 0
+    ctx.save(); ctx.beginPath(); ctx.rect(pad.l, pad.t, W - pad.l - pad.r, H - pad.t - pad.b); ctx.clip();
+    ctx.strokeStyle = fg; ctx.lineWidth = 3;
+    ctx.beginPath();
+    if (Math.abs(w.wA) > 1e-6) {
+      const y = x => -(w.wD * x + w.b) / w.wA;
+      ctx.moveTo(sx(X0 - 5), sy(y(X0 - 5))); ctx.lineTo(sx(X1 + 5), sy(y(X1 + 5)));
+    } else if (Math.abs(w.wD) > 1e-6) {
+      const x = -w.b / w.wD; ctx.moveTo(sx(x), sy(Y0 - 5)); ctx.lineTo(sx(x), sy(Y1 + 5));
+    }
+    ctx.stroke(); ctx.restore();
+
+    // punti
+    const r = Math.max(6, Math.min(9, W / 70));
+    for (const p of data) {
+      const x = sx(p[0]), y = sy(p[1]), c = p[2] === 1 ? pos : neg;
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      if (p[2] === 1) ctx.rect(x - r * .9, y - r * .9, r * 1.8, r * 1.8); else ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      if (predict(p) !== p[2]) {
+        ctx.strokeStyle = fg; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r + 5, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+    if (highlight) {
+      const x = sx(highlight[0]), y = sy(highlight[1]);
+      ctx.strokeStyle = css('--accent'); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(x, y, r + 12, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+
+  function syncUI() {
+    $('wD').value = w.wD; $('wA').value = w.wA; $('b').value = w.b;
+    $('wDo').textContent = w.wD.toFixed(2); $('wAo').textContent = w.wA.toFixed(2); $('bo').textContent = w.b.toFixed(1);
+    const e = errors().length;
+    $('errN').textContent = `${e} / ${data.length}`;
+    $('errBox').classList.toggle('hot', e > 0);
+    $('updN').textContent = updates;
+    $('formula').innerHTML =
+      `punteggio = <b>${w.wD.toFixed(2)}</b>·diametro + <b>${w.wA.toFixed(2)}</b>·altezza + <b>${w.b.toFixed(1)}</b><br>` +
+      `se punteggio ≥ 0 → bottiglia, altrimenti → piatto`;
+    draw();
+  }
+
+  // un passo della regola del percettrone, con la retta che si sposta in modo fluido
+  function learnStep() {
+    if (tween) return false;
+    const wrong = errors();
+    if (!wrong.length) { highlight = null; stop(); syncUI(); return false; }
+    const p = wrong[Math.floor(Math.random() * wrong.length)];
+    const t = p[2];
+    const from = { ...w }, to = { wD: w.wD + LR * t * p[0], wA: w.wA + LR * t * p[1], b: w.b + LR * t };
+    highlight = p; updates++;
+    const t0 = performance.now(), dur = playing ? 260 : 600;
+    tween = true;
+    const anim = now => {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      w = { wD: from.wD + (to.wD - from.wD) * e, wA: from.wA + (to.wA - from.wA) * e, b: from.b + (to.b - from.b) * e };
+      syncUI();
+      if (k < 1) requestAnimationFrame(anim); else { w = to; tween = null; syncUI(); }
+    };
+    requestAnimationFrame(anim);
+    return true;
+  }
+
+  function stop() { playing = false; clearInterval(timer); $('play').textContent = 'Impara da solo'; }
+  $('play').onclick = () => {
+    if (playing) return stop();
+    playing = true; $('play').textContent = 'Pausa';
+    timer = setInterval(() => { if (!tween && !learnStep() && !tween) stop(); }, 330);
+  };
+  $('step').onclick = () => { stop(); learnStep(); };
+  $('reset').onclick = () => { stop(); w = { ...START }; updates = 0; highlight = null; data = BASE.map(p => p.slice()); syncUI(); };
+
+  for (const id of ['wD', 'wA', 'b']) {
+    $(id).addEventListener('input', e => { stop(); highlight = null; w[id] = parseFloat(e.target.value); syncUI(); });
+  }
+
+  document.querySelectorAll('[data-add]').forEach(btn => btn.onclick = () => {
+    const v = parseInt(btn.dataset.add, 10);
+    addClass = addClass === v ? 0 : v;
+    document.querySelectorAll('[data-add]').forEach(b => b.setAttribute('aria-pressed', String(parseInt(b.dataset.add, 10) === addClass)));
+  });
+  cv.addEventListener('click', e => {
+    if (!addClass) return;
+    const r = cv.getBoundingClientRect(), x = ix(e.clientX - r.left), y = iy(e.clientY - r.top);
+    if (x < X0 || x > X1 || y < Y0 || y > Y1) return;
+    data.push([+x.toFixed(2), +y.toFixed(2), addClass]); syncUI();
+  });
+
+  new ResizeObserver(resize).observe(cv.parentElement);
+  syncUI();
+})();
+</script>
+</body>
+</html>

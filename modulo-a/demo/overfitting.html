@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imparare a memoria</title>
+<link rel="stylesheet" href="../comune/demo.css">
+<style>
+  .chart { background: var(--surface); border-radius: 10px; padding: 8px; }
+  .chart canvas { display: block; width: 100%; }
+  .msg { font-size: 15px; min-height: 2.9em; margin: 0; }
+  .msg b { color: var(--accent); }
+  .toggle { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+  .toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
+</style>
+</head>
+<body>
+<main class="demo">
+  <header class="demo-head">
+    <div class="kicker">Demo · Overfitting</div>
+    <h1>Lo studente che impara a memoria</h1>
+    <p>I punti pieni sono gli esempi di addestramento. Aumenta la complessità del modello: la curva passa sempre più vicina ai punti. Poi accendi i <b>dati di test</b>, mai visti durante l'addestramento.</p>
+  </header>
+
+  <section class="stage"><canvas id="cv" aria-label="Punti e curva del modello"></canvas></section>
+
+  <section class="panel">
+    <div class="control">
+      <label for="deg"><span>Complessità del modello</span> <output id="dego"></output></label>
+      <input type="range" id="deg" min="1" max="9" step="1" value="1">
+    </div>
+    <label class="toggle"><input type="checkbox" id="showTest"> Mostra i dati di test</label>
+
+    <div class="stats">
+      <div class="stat"><div class="n" id="trN">0</div><div class="t">errore sugli esempi</div></div>
+      <div class="stat hot" id="teBox"><div class="n" id="teN">?</div><div class="t">errore su dati nuovi</div></div>
+    </div>
+    <div class="chart"><canvas id="ch" aria-label="Errore al variare della complessità"></canvas></div>
+    <p class="msg" id="msg"></p>
+
+    <div class="buttons"><button id="again">Nuovi dati</button></div>
+    <a class="back" href="./">← tutte le demo</a>
+  </section>
+</main>
+
+<script>
+(() => {
+  const truth = x => 0.75 * Math.sin(Math.PI * x) + 0.25 * x;
+  const N_TRAIN = 10, N_TEST = 40, NOISE = 0.2, MAXD = 9;
+  let seed = 123, train = [], test = [], fits = [];
+
+  function rng() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  function gauss() { let u = 0, v = 0; while (!u) u = rng(); while (!v) v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+  function sample() {
+    train = Array.from({ length: N_TRAIN }, (_, i) => { const x = -0.95 + 1.9 * (i + 0.2 + 0.6 * rng()) / N_TRAIN; return [x, truth(x) + NOISE * gauss()]; });
+    test = Array.from({ length: N_TEST }, () => { const x = -0.95 + 1.9 * rng(); return [x, truth(x) + NOISE * gauss()]; });
+    fits = [];
+    for (let d = 1; d <= MAXD; d++) fits[d] = fit(d);
+  }
+
+  // minimi quadrati su base di Chebyshev (stabile), con una regolarizzazione minuscola
+  const basis = (x, d) => { const T = [1, x]; for (let k = 2; k <= d; k++) T[k] = 2 * x * T[k - 1] - T[k - 2]; return T.slice(0, d + 1); };
+  function fit(d) {
+    const n = d + 1, A = Array.from({ length: n }, () => new Array(n + 1).fill(0));
+    for (const [x, y] of train) { const p = basis(x, d); for (let i = 0; i < n; i++) { for (let j = 0; j < n; j++) A[i][j] += p[i] * p[j]; A[i][n] += p[i] * y; } }
+    for (let i = 0; i < n; i++) A[i][i] += 1e-9;
+    for (let c = 0; c < n; c++) {
+      let m = c; for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[m][c])) m = r;
+      [A[c], A[m]] = [A[m], A[c]];
+      for (let r = 0; r < n; r++) if (r !== c) { const f = A[r][c] / A[c][c]; for (let k = c; k <= n; k++) A[r][k] -= f * A[c][k]; }
+    }
+    const w = A.map((row, i) => row[n] / row[i]);
+    const f = x => basis(x, d).reduce((s, v, i) => s + v * w[i], 0);
+    const mse = pts => pts.reduce((s, [x, y]) => s + (f(x) - y) ** 2, 0) / pts.length;
+    return { f, tr: mse(train), te: mse(test) };
+  }
+
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const ch = document.getElementById('ch'), cctx = ch.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  let W = 0, H = 0, CW = 0, CH = 0;
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    W = cv.parentElement.getBoundingClientRect().width; H = Math.round(Math.min(W * 0.62, window.innerHeight * 0.55));
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    CW = ch.parentElement.getBoundingClientRect().width - 16; CH = 130;
+    ch.width = CW * dpr; ch.height = CH * dpr; ch.style.height = CH + 'px'; cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+
+  function draw() {
+    if (!W) return;
+    const d = parseInt($('deg').value, 10), F = fits[d], showT = $('showTest').checked;
+    const fg = css('--fg'), muted = css('--muted'), pos = css('--pos'), acc = css('--accent'), line = css('--line');
+    const sx = x => 16 + (x + 1) / 2 * (W - 32), sy = y => H / 2 - y * (H * 0.36);
+
+    ctx.fillStyle = css('--surface'); ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, sy(0)); ctx.lineTo(W, sy(0)); ctx.stroke();
+
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+    ctx.strokeStyle = fg; ctx.lineWidth = 3; ctx.beginPath();
+    for (let px = 0; px <= W; px += 2) { const x = (px - 16) / (W - 32) * 2 - 1, y = sy(F.f(x)); px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y); }
+    ctx.stroke(); ctx.restore();
+
+    if (showT) {
+      ctx.strokeStyle = acc; ctx.lineWidth = 2;
+      for (const [x, y] of test) { ctx.beginPath(); ctx.arc(sx(x), sy(y), 6, 0, Math.PI * 2); ctx.stroke(); }
+    }
+    ctx.fillStyle = pos;
+    for (const [x, y] of train) { ctx.beginPath(); ctx.arc(sx(x), sy(y), 7, 0, Math.PI * 2); ctx.fill(); }
+
+    // grafico errore vs complessità
+    const pl = 34, pr = 10, pt = 10, pb = 26, cap = 0.6;
+    const gx = k => pl + (k - 1) / (MAXD - 1) * (CW - pl - pr), gy = v => CH - pb - Math.min(v, cap) / cap * (CH - pt - pb);
+    cctx.clearRect(0, 0, CW, CH);
+    cctx.strokeStyle = line; cctx.lineWidth = 1; cctx.beginPath(); cctx.moveTo(pl, CH - pb); cctx.lineTo(CW - pr, CH - pb); cctx.stroke();
+    cctx.fillStyle = muted; cctx.font = `12px ${css('--body')}`; cctx.textAlign = 'center'; cctx.textBaseline = 'top';
+    cctx.fillText('complessità →', (pl + CW - pr) / 2, CH - pb + 8);
+    cctx.save(); cctx.translate(10, (pt + CH - pb) / 2); cctx.rotate(-Math.PI / 2); cctx.textBaseline = 'middle'; cctx.fillText('errore', 0, 0); cctx.restore();
+    const series = (key, col, upto) => {
+      cctx.strokeStyle = col; cctx.lineWidth = 2.5; cctx.beginPath();
+      for (let k = 1; k <= upto; k++) { const p = [gx(k), gy(fits[k][key])]; k === 1 ? cctx.moveTo(...p) : cctx.lineTo(...p); }
+      cctx.stroke();
+    };
+    series('tr', pos, MAXD);
+    if (showT) series('te', acc, MAXD);
+    cctx.strokeStyle = fg; cctx.setLineDash([4, 4]); cctx.beginPath(); cctx.moveTo(gx(d), pt); cctx.lineTo(gx(d), CH - pb); cctx.stroke(); cctx.setLineDash([]);
+  }
+
+  function ui() {
+    const d = parseInt($('deg').value, 10), F = fits[d], showT = $('showTest').checked;
+    const names = ['', 'una retta', 'una parabola'];
+    $('dego').textContent = d <= 2 ? `${d} · ${names[d]}` : `${d}`;
+    $('trN').textContent = F.tr.toFixed(3);
+    $('teN').textContent = showT ? (F.te > 9.99 ? '> 10' : F.te.toFixed(3)) : '?';
+    $('teBox').classList.toggle('hot', showT);
+    let m;
+    if (!showT) m = 'L\'errore sugli esempi scende sempre aumentando la complessità. Sembra che il modello migliori. Ma <b>è davvero così?</b>';
+    else if (d <= 2) m = 'Troppo semplice: sbaglia sia sugli esempi sia sui dati nuovi. È <b>underfitting</b>.';
+    else if (d <= 6) m = 'Zona buona: il modello ha colto l\'andamento senza inseguire il rumore.';
+    else m = 'Gli esempi sono quasi perfetti, ma sui dati nuovi l\'errore <b>sale</b>: il modello ha imparato a memoria anche il rumore. È <b>overfitting</b>.';
+    $('msg').innerHTML = m;
+    draw();
+  }
+
+  $('deg').addEventListener('input', ui);
+  $('showTest').addEventListener('change', ui);
+  $('again').onclick = () => { seed = Math.floor(Math.random() * 1e6) + 1; sample(); ui(); };
+
+  sample();
+  new ResizeObserver(resize).observe(document.querySelector('.demo'));
+  ui();
+})();
+</script>
+</body>
+</html>

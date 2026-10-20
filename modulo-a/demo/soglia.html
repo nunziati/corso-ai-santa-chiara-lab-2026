@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dove mettere la soglia</title>
+<link rel="stylesheet" href="../comune/demo.css">
+<style>
+  .cm { display: grid; grid-template-columns: auto 1fr 1fr; gap: 6px; font-size: 13px; align-items: stretch; }
+  .cm .h { color: var(--muted); display: flex; align-items: end; padding: 0 4px 2px; }
+  .cm .rh { color: var(--muted); display: flex; align-items: center; padding-right: 4px; writing-mode: horizontal-tb; }
+  .cell { background: var(--surface); border-radius: 10px; padding: 10px; }
+  .cell .n { font-family: var(--head); font-weight: var(--head-w); font-size: 26px; line-height: 1; }
+  .cell .t { color: var(--muted); margin-top: 4px; }
+  .cell.bad .n { color: var(--accent); }
+  .msg { font-size: 15px; margin: 0; min-height: 2.9em; }
+  .msg b { color: var(--accent); }
+</style>
+</head>
+<body>
+<main class="demo">
+  <header class="demo-head">
+    <div class="kicker">Demo · Soglia ed errori</div>
+    <h1>Dove mettere la soglia?</h1>
+    <p>Un modello dà a ognuna di 100 persone un punteggio di rischio. Sopra la soglia la persona viene mandata a fare altri esami. Nessuna soglia è perfetta: <b>scegli tu dove sbagliare</b>.</p>
+  </header>
+
+  <section class="stage"><canvas id="cv" aria-label="Punteggi di 10 persone malate e 90 sane con la soglia"></canvas></section>
+
+  <section class="panel">
+    <div class="control">
+      <label for="th"><span>Soglia</span> <output id="tho"></output></label>
+      <input type="range" id="th" min="0" max="1" step="0.01" value="0.5">
+    </div>
+
+    <div class="cm" aria-live="polite">
+      <div></div><div class="h">il test dice: <b>&nbsp;positivo</b></div><div class="h">il test dice: <b>&nbsp;negativo</b></div>
+      <div class="rh">malati</div>
+      <div class="cell"><div class="n" id="tp">0</div><div class="t">malati trovati</div></div>
+      <div class="cell bad"><div class="n" id="fn">0</div><div class="t">malati mandati a casa</div></div>
+      <div class="rh">sani</div>
+      <div class="cell bad"><div class="n" id="fp">0</div><div class="t">sani spaventati per niente</div></div>
+      <div class="cell"><div class="n" id="tn">0</div><div class="t">sani rassicurati</div></div>
+    </div>
+    <p class="msg" id="msg"></p>
+
+    <div class="buttons">
+      <button id="noMiss">Non perdere nessun malato</button>
+      <button id="noScare">Non spaventare nessun sano</button>
+    </div>
+    <p class="note">In uno screening di solito si accetta di spaventare qualche sano pur di non perdere i malati. In un filtro antispam si fa il contrario: meglio uno spam in più nella posta che una mail importante nel cestino.</p>
+    <a class="back" href="./">← tutte le demo</a>
+  </section>
+</main>
+
+<script>
+(() => {
+  let seed = 42;
+  const rng = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const gauss = () => { let u = 0, v = 0; while (!u) u = rng(); while (!v) v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const clip = v => Math.max(0.02, Math.min(0.98, v));
+  const sick = Array.from({ length: 10 }, () => clip(0.68 + 0.14 * gauss()));
+  const healthy = Array.from({ length: 90 }, () => clip(0.34 + 0.15 * gauss()));
+
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  let W = 0, H = 0, dragging = false;
+  const padX = 18;
+
+  let bins = 20, r = 6, stepY = 14, hSick = 0, hHealthy = 0;
+  function layout() {
+    bins = Math.max(16, Math.floor((W - 2 * padX) / 18));
+    r = Math.max(4, Math.min(7, (W - 2 * padX) / bins / 2 - 1));
+    stepY = 2 * r + 2;
+    const maxStack = pts => Math.max(...stack(pts, bins).map(p => p[2])) + 1;
+    hSick = 34 + maxStack(sick) * stepY + 12;
+    hHealthy = 30 + maxStack(healthy) * stepY + 30;
+    H = Math.round(hSick + hHealthy);
+  }
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    W = cv.parentElement.getBoundingClientRect().width; layout();
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
+  }
+  const sx = v => padX + v * (W - 2 * padX);
+
+  // punti impilati per fasce di punteggio
+  function stack(scores, bins) {
+    const cnt = new Array(bins).fill(0);
+    return scores.map(s => { const b = Math.min(bins - 1, Math.floor(s * bins)); return [s, (b + 0.5) / bins, cnt[b]++]; });
+  }
+
+  function draw() {
+    if (!W) return;
+    const th = parseFloat($('th').value);
+    const fg = css('--fg'), muted = css('--muted'), acc = css('--accent'), pos = css('--pos');
+    ctx.fillStyle = css('--surface'); ctx.fillRect(0, 0, W, H);
+
+    const rowSick = hSick - 12, rowHealthy = H - 30;
+
+    // zona "positivo"
+    ctx.fillStyle = acc; ctx.globalAlpha = 0.07; ctx.fillRect(sx(th), 0, W - sx(th), H); ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = css('--line'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, hSick); ctx.lineTo(W, hSick); ctx.stroke();
+    ctx.fillStyle = muted; ctx.font = `13px ${css('--body')}`; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+    ctx.fillText('10 persone malate', padX, 10);
+    ctx.fillText('90 persone sane', padX, hSick + 8);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('punteggio del modello →', W / 2, H - 4);
+
+    const plot = (pts, base, col) => {
+      for (const [s, c, k] of stack(pts, bins)) {
+        const x = sx(c), y = base - r - k * stepY, above = s >= th;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+        if (above) { ctx.fillStyle = col; ctx.fill(); } else { ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke(); }
+      }
+    };
+    plot(sick, rowSick, acc);
+    plot(healthy, rowHealthy, pos);
+
+    // linea della soglia con maniglia
+    const x = sx(th);
+    ctx.strokeStyle = fg; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H - 22); ctx.stroke();
+    ctx.fillStyle = fg; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x - 14, H / 2 - 18, 28, 36, 8) : ctx.rect(x - 14, H / 2 - 18, 28, 36); ctx.fill();
+    ctx.fillStyle = css('--bg'); ctx.font = `bold 14px ${css('--body')}`; ctx.textBaseline = 'middle'; ctx.fillText('↔', x, H / 2);
+  }
+
+  function ui() {
+    const th = parseFloat($('th').value);
+    const tp = sick.filter(s => s >= th).length, fn = 10 - tp;
+    const fp = healthy.filter(s => s >= th).length, tn = 90 - fp;
+    $('tho').textContent = th.toFixed(2);
+    $('tp').textContent = tp; $('fn').textContent = fn; $('fp').textContent = fp; $('tn').textContent = tn;
+    let m;
+    if (fn === 0 && fp === 0) m = 'Nessun errore: con dati veri non succede quasi mai.';
+    else if (fn === 0) m = `Nessun malato perso, ma <b>${fp} sani</b> faranno esami inutili.`;
+    else if (fp === 0) m = `Nessun sano spaventato, ma <b>${fn} ${fn === 1 ? 'malato torna' : 'malati tornano'} a casa</b> senza diagnosi.`;
+    else m = `${fn} ${fn === 1 ? 'malato perso' : 'malati persi'} e ${fp} sani spaventati. Spostando la soglia un errore cala e l'altro cresce.`;
+    $('msg').innerHTML = m;
+    draw();
+  }
+
+  $('th').addEventListener('input', ui);
+  $('noMiss').onclick = () => { $('th').value = Math.floor(Math.min(...sick) * 100) / 100; ui(); };
+  $('noScare').onclick = () => { $('th').value = Math.min(1, Math.ceil(Math.max(...healthy) * 100 + 0.5) / 100); ui(); };
+
+  const toTh = e => { const r = cv.getBoundingClientRect(); const v = ((e.clientX - r.left) - padX) / (r.width - 2 * padX); $('th').value = Math.max(0, Math.min(1, v)).toFixed(2); ui(); };
+  cv.addEventListener('pointerdown', e => { dragging = true; cv.setPointerCapture(e.pointerId); toTh(e); });
+  cv.addEventListener('pointermove', e => { if (dragging) toTh(e); });
+  cv.addEventListener('pointerup', () => dragging = false);
+  cv.style.touchAction = 'pan-y';
+
+  new ResizeObserver(resize).observe(cv.parentElement);
+  ui();
+})();
+</script>
+</body>
+</html>
