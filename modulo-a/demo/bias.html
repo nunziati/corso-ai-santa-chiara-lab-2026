@@ -6,14 +6,15 @@
 <title>Il bias viene dai dati</title>
 <link rel="stylesheet" href="../comune/demo.css">
 <style>
-  .acc { display: grid; gap: 10px; }
-  .acc .row { display: grid; grid-template-columns: 92px 1fr 58px; align-items: center; gap: 10px; font-size: 14px; }
-  .acc .track { height: 18px; background: var(--surface); border-radius: 9px; overflow: hidden; }
-  .acc .fill { height: 100%; width: 100%; background: var(--fg); transform-origin: 0 50%; transition: transform .5s cubic-bezier(.2,.8,.2,1); }
-  .acc .row.b .fill { background: var(--accent); }
-  .acc .v { font-family: var(--mono); text-align: right; }
-  .msg { font-size: 15px; margin: 0; min-height: 2.9em; }
+  .msg { font-size: 15px; margin: 0; min-height: 4.4em; }
   .msg b { color: var(--accent); }
+  .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+  .seg button { padding: 8px 12px; min-height: 40px; font-size: 14px; }
+  .key { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+  .key span { display: flex; align-items: center; gap: 8px; }
+  .key i { display: inline-block; width: 28px; height: 0; border-top: 3px solid var(--fg); }
+  .key i.b { border-color: var(--accent); }
+  .key i.dash { border-top-style: dashed; border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -21,32 +22,34 @@
   <header class="demo-head">
     <div class="kicker">Demo · Bias dai dati</div>
     <h1>Il modello impara chi vede</h1>
-    <p>Due gruppi di persone, A (cerchi) e B (triangoli). Per entrambi la risposta giusta dipende dalle stesse due misure, ma nel gruppo B il confine sta in un punto diverso. Il modello impara da un unico insieme di esempi: cosa succede se il gruppo B è <b>raro</b>?</p>
+    <p>Un modello deve rispondere sì o no guardando due misure. Le persone sono di due gruppi, A (cerchi) e B (triangoli). Per il gruppo B il confine giusto sta in un punto diverso. Muovi il cursore: <b>quanti esempi del gruppo B</b> ci sono nei dati di addestramento?</p>
   </header>
 
-  <section class="stage"><canvas id="cv" aria-label="Esempi di addestramento dei due gruppi e confine imparato dal modello"></canvas></section>
+  <section class="stage"><canvas id="cv" aria-label="Esempi di addestramento dei due gruppi e confini imparati dal modello"></canvas></section>
 
   <section class="panel">
-    <div class="control">
-      <label for="share"><span>Quota del gruppo B negli esempi</span> <output id="shareo"></output></label>
-      <input type="range" id="share" min="2" max="50" step="1" value="5">
+    <div class="stats">
+      <div class="stat"><div class="n" id="ea">–</div><div class="t">errori sul gruppo A</div></div>
+      <div class="stat hot"><div class="n" id="eb">–</div><div class="t">errori sul gruppo B</div></div>
     </div>
-
-    <div class="acc" aria-live="polite">
-      <div class="row"><span>Gruppo A</span><div class="track"><div class="fill" id="fa"></div></div><span class="v" id="va"></span></div>
-      <div class="row b"><span>Gruppo B</span><div class="track"><div class="fill" id="fb"></div></div><span class="v" id="vb"></span></div>
-      <div class="row"><span>In media</span><div class="track"><div class="fill" id="fm"></div></div><span class="v" id="vm"></span></div>
-    </div>
-    <p class="note">Percentuale di risposte giuste su persone nuove, metà del gruppo A e metà del gruppo B.</p>
     <p class="msg" id="msg"></p>
 
-    <div class="legend">
-      <span><i class="dot" style="background:var(--pos)"></i>risposta giusta: sì</span>
-      <span><i class="dot" style="background:var(--neg)"></i>risposta giusta: no</span>
-      <span>● gruppo A &nbsp;▲ gruppo B</span>
-      <span>linea piena: confine imparato</span>
-      <span style="color:var(--accent)">tratteggio: confine giusto per B</span>
+    <div class="control">
+      <label for="share"><span>Esempi del gruppo B nei dati</span> <output id="shareo"></output></label>
+      <input type="range" id="share" min="1" max="50" step="1" value="2">
     </div>
+    <div class="seg" role="group" aria-label="Scenari">
+      <button data-share="2">Gruppo B raro (2%)</button>
+      <button data-share="10">Un po' di più (10%)</button>
+      <button data-share="50">Dati bilanciati (50%)</button>
+    </div>
+
+    <div class="key">
+      <span><i></i>confine imparato per il gruppo A</span>
+      <span><i class="b"></i>confine imparato per il gruppo B</span>
+      <span><i class="dash"></i>confine giusto per il gruppo B</span>
+    </div>
+    <p class="note">Errori misurati su 1000 persone nuove per gruppo. Nessuno ha scritto una regola che discrimina: con pochi esempi il modello non riesce a imparare il confine del gruppo B e usa quello del gruppo A. Più esempi di B, e la linea arancione si sposta su quella tratteggiata.</p>
     <a class="back" href="./">← tutte le demo</a>
   </section>
 </main>
@@ -55,26 +58,28 @@
 (() => {
   let seed = 2024;
   const rng = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
-  const N = 240;
-  // regola vera: gruppo A "sì" se x + y > 1; gruppo B "sì" se x + y > 0.62 (confine spostato)
-  const make = (g, n) => Array.from({ length: n }, () => { const x = rng(), y = rng(); return { x, y, g, t: (x + y > (g === 'A' ? 1 : 0.62)) ? 1 : 0 }; });
+  const N = 400, TA = 1.0, TB = 0.55;
+  // regola vera: "sì" se x + y supera la soglia del proprio gruppo
+  const make = (g, n) => Array.from({ length: n }, () => { const x = rng(), y = rng(); return { x, y, g, t: (x + y > (g === 'A' ? TA : TB)) ? 1 : 0 }; });
   const poolA = make('A', N), poolB = make('B', N);
-  const testA = make('A', 400), testB = make('B', 400);
+  const testA = make('A', 1000), testB = make('B', 1000);
 
+  // regressione logistica con il gruppo come ingresso: può imparare un confine diverso per B, se vede abbastanza esempi di B
   function train(data) {
-    let w1 = 0, w2 = 0, b = 0;
-    const lr = 2.5;
-    for (let it = 0; it < 600; it++) {
-      let g1 = 0, g2 = 0, gb = 0;
+    let w1 = 0, w2 = 0, b = 0, wg = 0;
+    const lr = 3, n = data.length;
+    for (let it = 0; it < 800; it++) {
+      let g1 = 0, g2 = 0, gb = 0, gg = 0;
       for (const p of data) {
-        const z = w1 * (p.x - .5) + w2 * (p.y - .5) + b, s = 1 / (1 + Math.exp(-z)), e = s - p.t;
-        g1 += e * (p.x - .5); g2 += e * (p.y - .5); gb += e;
+        const gi = p.g === 'B' ? 1 : 0, z = w1 * (p.x - .5) + w2 * (p.y - .5) + b + wg * gi, e = 1 / (1 + Math.exp(-z)) - p.t;
+        g1 += e * (p.x - .5); g2 += e * (p.y - .5); gb += e; gg += e * gi;
       }
-      w1 -= lr * g1 / data.length; w2 -= lr * g2 / data.length; b -= lr * gb / data.length;
+      w1 -= lr * g1 / n; w2 -= lr * g2 / n; b -= lr * gb / n; wg -= lr * (gg / n + 0.002 * wg);
     }
-    return { w1, w2, b, pred: p => (w1 * (p.x - .5) + w2 * (p.y - .5) + b) >= 0 ? 1 : 0 };
+    const score = p => w1 * (p.x - .5) + w2 * (p.y - .5) + b + (p.g === 'B' ? wg : 0);
+    return { w1, w2, b, wg, pred: p => score(p) >= 0 ? 1 : 0 };
   }
-  const acc = (m, pts) => pts.filter(p => m.pred(p) === p.t).length / pts.length;
+  const errRate = (m, pts) => pts.filter(p => m.pred(p) !== p.t).length / pts.length;
 
   const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
@@ -88,38 +93,35 @@
   }
   const P = 18;
   const sx = v => P + v * (W - 2 * P), sy = v => H - P - v * (H - 2 * P);
-  function hexA(hex, a) { const n = parseInt(hex.replace('#', ''), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
+
+  function line(yAt, color, width, dash) {
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash || []);
+    ctx.beginPath(); ctx.moveTo(sx(-.2), sy(yAt(-.2))); ctx.lineTo(sx(1.2), sy(yAt(1.2))); ctx.stroke(); ctx.setLineDash([]);
+  }
 
   function draw() {
     if (!W || !model) return;
-    const pos = css('--pos'), neg = css('--neg'), fg = css('--fg');
+    const pos = css('--pos'), neg = css('--neg'), fg = css('--fg'), acc = css('--accent');
     ctx.fillStyle = css('--surface'); ctx.fillRect(0, 0, W, H);
-    const st = 8;
-    for (let px = P; px < W - P; px += st) for (let py = P; py < H - P; py += st) {
-      const p = { x: (px + st / 2 - P) / (W - 2 * P), y: (H - P - py - st / 2) / (H - 2 * P) };
-      ctx.fillStyle = hexA(model.pred(p) ? pos : neg, 0.1); ctx.fillRect(px, py, st, st);
-    }
-    // confine imparato
-    ctx.save(); ctx.beginPath(); ctx.rect(P, P, W - 2 * P, H - 2 * P); ctx.clip();
-    ctx.strokeStyle = fg; ctx.lineWidth = 3; ctx.beginPath();
-    const yAt = x => .5 - (model.w1 * (x - .5) + model.b) / model.w2;
-    ctx.moveTo(sx(-.2), sy(yAt(-.2))); ctx.lineTo(sx(1.2), sy(yAt(1.2))); ctx.stroke();
-    // confine vero del gruppo B, tratteggiato
-    ctx.strokeStyle = css('--accent'); ctx.setLineDash([7, 6]); ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(sx(-.2), sy(.82)); ctx.lineTo(sx(1.2), sy(-.58)); ctx.stroke(); ctx.setLineDash([]);
-    ctx.restore();
 
     const r = Math.max(5, Math.min(7, W / 90));
     for (const p of data) {
       const x = sx(p.x), y = sy(p.y);
-      ctx.fillStyle = p.t ? pos : neg; ctx.globalAlpha = p.g === 'A' ? 0.55 : 1;
-      ctx.beginPath();
-      if (p.g === 'A') ctx.arc(x, y, r * .8, 0, Math.PI * 2);
-      else { ctx.moveTo(x, y - r * 1.4); ctx.lineTo(x + r * 1.25, y + r * .9); ctx.lineTo(x - r * 1.25, y + r * .9); ctx.closePath(); }
-      ctx.fill();
-      if (p.g === 'B') { ctx.globalAlpha = 1; ctx.strokeStyle = fg; ctx.lineWidth = 1.5; ctx.stroke(); }
+      ctx.fillStyle = p.t ? pos : neg;
+      if (p.g === 'A') { ctx.globalAlpha = .35; ctx.beginPath(); ctx.arc(x, y, r * .75, 0, Math.PI * 2); ctx.fill(); }
+      else {
+        ctx.globalAlpha = 1; ctx.beginPath(); ctx.moveTo(x, y - r * 1.5); ctx.lineTo(x + r * 1.35, y + r); ctx.lineTo(x - r * 1.35, y + r); ctx.closePath();
+        ctx.fill(); ctx.strokeStyle = fg; ctx.lineWidth = 1.5; ctx.stroke();
+      }
     }
     ctx.globalAlpha = 1;
+
+    ctx.save(); ctx.beginPath(); ctx.rect(P, P, W - 2 * P, H - 2 * P); ctx.clip();
+    const { w1, w2, b, wg } = model;
+    line(x => .5 - (w1 * (x - .5) + b) / w2, fg, 3);
+    line(x => .5 - (w1 * (x - .5) + b + wg) / w2, acc, 4);
+    line(x => TB - x, acc, 2.5, [9, 7]);
+    ctx.restore();
   }
 
   function update() {
@@ -127,16 +129,21 @@
     const nB = Math.max(1, Math.round(N * share)), nA = N - nB;
     data = poolA.slice(0, nA).concat(poolB.slice(0, nB));
     model = train(data);
-    const a = acc(model, testA), b = acc(model, testB), m = (a + b) / 2;
-    $('shareo').textContent = `${Math.round(share * 100)}% · ${nB} esempi su ${N}`;
-    [['fa', 'va', a], ['fb', 'vb', b], ['fm', 'vm', m]].forEach(([f, v, x]) => { $(f).style.transform = `scaleX(${x})`; $(v).textContent = Math.round(x * 100) + '%'; });
-    $('msg').innerHTML = b < a - 0.08
-      ? `Il modello ha imparato il confine del gruppo A. Sul gruppo B sbaglia <b>${Math.round((1 - b) * 100)} volte su 100</b>, contro ${Math.round((1 - a) * 100)} sul gruppo A. Nessuno lo ha programmato per discriminare.`
-      : 'Con abbastanza esempi di B il modello trova un compromesso: gli errori si distribuiscono in modo più equo fra i gruppi.';
+    const a = errRate(model, testA), b = errRate(model, testB);
+    $('shareo').textContent = `${Math.round(share * 100)}% · ${nB} su ${N}`;
+    $('ea').textContent = Math.round(a * 100) + '%';
+    $('eb').textContent = Math.round(b * 100) + '%';
+    const ratio = b / Math.max(a, 0.005);
+    $('msg').innerHTML = b > 0.1
+      ? `Il gruppo B è raro: il modello applica a B il confine di A e <b>sbaglia ${Math.round(b * 100)} volte su 100</b>, contro ${Math.round(a * 100)} sul gruppo A. È lo schema di Gender Shades.`
+      : b > a * 1.5 + 0.01
+        ? `Con più esempi il confine di B si avvicina a quello giusto. Gli errori su B scendono a ${Math.round(b * 100)}%, ma sono ancora ${ratio.toFixed(1).replace('.', ',')} volte quelli su A.`
+        : `Con abbastanza esempi di B il modello impara anche il suo confine: gli errori sono <b>simili nei due gruppi</b>.`;
     draw();
   }
 
   $('share').addEventListener('input', update);
+  document.querySelectorAll('[data-share]').forEach(btn => btn.onclick = () => { $('share').value = btn.dataset.share; update(); });
   new ResizeObserver(resize).observe(cv.parentElement);
   update();
 })();
