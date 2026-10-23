@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mappa delle parole</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../modulo-a/comune/demo.css">
+<style>
+  .stage { aspect-ratio: 1 / 1; }
+  @media (min-width: 900px) { .stage { aspect-ratio: 4 / 3; } }
+  .stage canvas { width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  .zoom { position: absolute; right: 10px; top: 10px; display: grid; gap: 6px; }
+  .zoom button { min-height: 40px; width: 40px; padding: 0; background: var(--bg); }
+  .cerca { display: flex; gap: 8px; }
+  .cerca input, .an input { font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--fg); min-width: 0; }
+  .cerca input { flex: 1; }
+  .vicini { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; }
+  .vicini button { min-height: 36px; padding: 6px 12px; font-size: 14px; border-color: var(--line); }
+  .an { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 6px; align-items: center; font-family: var(--mono); }
+  .an input { width: 100%; text-align: center; padding: 8px 6px; }
+  .esito { font-size: 15px; min-height: 1.5em; }
+  .esito b { color: var(--accent); font-family: var(--head); font-size: 22px; }
+  .barre { display: grid; gap: 4px; font-size: 14px; }
+  .barra { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 8px; }
+  .barra .nome { text-align: right; font-family: var(--head); }
+  .barra .tr { position: relative; height: 16px; }
+  .barra .tr::before { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; border-left: 1.5px solid var(--fg); }
+  .barra .b { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+  h2 { font-family: var(--head); font-weight: var(--head-w); font-size: 20px; margin: 4px 0 0; }
+  .legend .dot { width: 10px; height: 10px; }
+</style>
+</head>
+<body>
+<main class="demo">
+  <header class="demo-head">
+    <div class="kicker">Demo · Embedding</div>
+    <h1>Mappa delle parole</h1>
+    <p>Ogni parola è una lista di numeri imparata leggendo il web. Le parole usate negli stessi contesti finiscono <b>vicine</b>. Tocca una parola, cerca la tua città, prova un'analogia.</p>
+  </header>
+
+  <section class="stage">
+    <canvas id="cv" aria-label="Mappa di 2600 parole italiane"></canvas>
+    <div class="zoom"><button id="piu" aria-label="Ingrandisci">+</button><button id="meno" aria-label="Rimpicciolisci">−</button></div>
+  </section>
+
+  <section class="panel">
+    <div class="cerca"><input id="q" list="lista" placeholder="Cerca una parola (es. Siena)" autocomplete="off"><button class="primary" id="vai">Cerca</button></div>
+    <datalist id="lista"></datalist>
+    <div><div class="note" id="sel-t">Le più vicine a…</div><div class="vicini" id="vicini"></div></div>
+
+    <h2>Analogie</h2>
+    <div class="an"><input id="a" value="re"><span>−</span><input id="b" value="uomo"><span>+</span><input id="c" value="donna"></div>
+    <div class="buttons" id="preset"></div>
+    <div class="esito" id="esito"></div>
+
+    <h2>Una direzione che non vorremmo</h2>
+    <p class="note">Professioni che in italiano hanno la stessa forma al maschile e al femminile. Barra a destra: più vicine a «donna, madre, ragazza»; a sinistra: a «uomo, padre, ragazzo».</p>
+    <div class="barre" id="barre"></div>
+
+    <div class="legend" id="legenda"></div>
+    <p class="note">Vettori fastText italiani (Facebook AI Research, CC BY-SA 3.0), ridotti a 96 numeri per parola. La mappa schiaccia 96 dimensioni in 2 (t-SNE): le distanze disegnate sono approssimate, i vicini e le analogie sono calcolati sui vettori.</p>
+    <a class="back" href="./">← tutte le demo</a>
+  </section>
+</main>
+
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const dati = await (await fetch('dati/parole.json')).json();
+  const P = dati.parole, N = P.length, D = dati.dim, XY = dati.xy, CAT = dati.categorie;
+  const raw = Uint8Array.from(atob(dati.vettori), c => c.charCodeAt(0));
+  const V = new Float32Array(N * D);
+  for (let i = 0; i < N; i++) {
+    let s = 0;
+    for (let d = 0; d < D; d++) { const v = (raw[i * D + d] << 24 >> 24); V[i * D + d] = v; s += v * v; }
+    s = Math.sqrt(s) || 1;
+    for (let d = 0; d < D; d++) V[i * D + d] /= s;
+  }
+  const indice = new Map(P.map((w, i) => [w, i]));
+  const trova = w => { w = (w || '').trim(); return indice.get(w) ?? indice.get(w.toLowerCase()) ?? indice.get(w[0]?.toUpperCase() + w.slice(1).toLowerCase()); };
+  const vec = i => V.subarray(i * D, i * D + D);
+  const dot = (a, b) => { let s = 0; for (let d = 0; d < D; d++) s += a[d] * b[d]; return s; };
+  function vicini(v, k, escludi = []) {
+    let n = 0; for (let d = 0; d < D; d++) n += v[d] * v[d]; n = Math.sqrt(n) || 1;
+    const sc = [];
+    for (let i = 0; i < N; i++) if (!escludi.includes(i)) sc.push([dot(vec(i), v) / n, i]);
+    sc.sort((x, y) => y[0] - x[0]);
+    return sc.slice(0, k).map(x => x[1]);
+  }
+
+  const CATS = [...new Set(CAT.filter(Boolean))];
+  const colore = c => c ? css(`--cat-${CATS.indexOf(c) + 1}`) : css('--muted');
+  $('legenda').innerHTML = CATS.map(c => `<span><i class="dot" style="background:${colore(c)}"></i>${c}</span>`).join('');
+  $('lista').innerHTML = P.map(w => `<option value="${w}">`).join('');
+
+  // ---- mappa ----
+  const cv = $('cv'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, z = 1, ox = 0, oy = 0, sel = -1, linee = [], freccia = null;
+  const sx = x => W / 2 + (x * 0.46 * Math.min(W, H) + ox) * z, sy = y => H / 2 + (y * 0.46 * Math.min(W, H) + oy) * z;
+  function resize() {
+    const r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+    W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
+  }
+  function draw() {
+    if (!W) return;
+    ctx.fillStyle = css('--surface'); ctx.fillRect(0, 0, W, H);
+    ctx.font = `13px ${css('--body')}`; ctx.textBaseline = 'middle';
+    const evid = new Set([sel, ...linee]);
+    for (const j of linee) { ctx.strokeStyle = css('--accent'); ctx.globalAlpha = .5; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(sx(XY[sel][0]), sy(XY[sel][1])); ctx.lineTo(sx(XY[j][0]), sy(XY[j][1])); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+    for (let i = 0; i < N; i++) {
+      const x = sx(XY[i][0]), y = sy(XY[i][1]);
+      if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
+      const c = CAT[i];
+      ctx.fillStyle = colore(c); ctx.globalAlpha = c ? .95 : .35;
+      ctx.beginPath(); ctx.arc(x, y, c ? 3.2 : 2, 0, 6.2832); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // etichette in ordine di importanza; una etichetta che si sovrappone a una già scritta viene saltata
+    const occupato = [], ordine = [...evid].filter(i => i >= 0);
+    for (let i = 0; i < N; i++) if (!evid.has(i) && CAT[i]) ordine.push(i);
+    if (z >= 2.5) for (let i = 0; i < N; i++) if (!evid.has(i) && !CAT[i]) ordine.push(i);
+    for (const i of ordine) {
+      const x = sx(XY[i][0]), y = sy(XY[i][1]);
+      if (x < -40 || y < -20 || x > W + 40 || y > H + 20) continue;
+      const forte = evid.has(i);
+      ctx.font = `${forte ? 600 : 400} ${forte ? 15 : 12}px ${css('--body')}`;
+      const w = ctx.measureText(P[i]).width, r = [x + 5, y - 8, x + 9 + w, y + 8];
+      if (!forte && occupato.some(o => r[0] < o[2] && r[2] > o[0] && r[1] < o[3] && r[3] > o[1])) continue;
+      occupato.push(r);
+      ctx.fillStyle = forte ? css('--fg') : colore(CAT[i]);
+      ctx.fillText(P[i], x + 6, y);
+    }
+    if (freccia) {
+      const [a, b] = freccia;
+      ctx.strokeStyle = css('--accent-2'); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(sx(XY[a][0]), sy(XY[a][1])); ctx.lineTo(sx(XY[b][0]), sy(XY[b][1])); ctx.stroke();
+    }
+    if (sel >= 0) {
+      ctx.fillStyle = css('--accent'); ctx.beginPath(); ctx.arc(sx(XY[sel][0]), sy(XY[sel][1]), 7, 0, 6.2832); ctx.fill();
+    }
+  }
+  function centra(i, zz = Math.max(z, 3)) {
+    z = zz; const m = 0.46 * Math.min(W, H); ox = -XY[i][0] * m; oy = -XY[i][1] * m; draw();
+  }
+  function scegli(i, centraMappa = true) {
+    sel = i; freccia = null;
+    linee = vicini(vec(i), 8, [i]);
+    $('sel-t').innerHTML = `Le più vicine a <b>${P[i]}</b>:`;
+    $('vicini').innerHTML = linee.map(j => `<button data-i="${j}">${P[j]}</button>`).join('');
+    if (centraMappa) centra(i); else draw();
+  }
+  $('vicini').onclick = e => { const b = e.target.closest('button[data-i]'); if (b) scegli(+b.dataset.i); };
+  const cerca = () => { const i = trova($('q').value); if (i === undefined) { $('sel-t').textContent = `«${$('q').value}» non è tra le 2.600 parole della mappa.`; $('vicini').innerHTML = ''; } else scegli(i); };
+  $('vai').onclick = cerca; $('q').addEventListener('keydown', e => { if (e.key === 'Enter') cerca(); });
+  $('piu').onclick = () => { z = Math.min(12, z * 1.5); draw(); };
+  $('meno').onclick = () => { z = Math.max(0.8, z / 1.5); draw(); };
+
+  // trascinamento, pizzico, rotella e tocco
+  const pt = new Map(); let mossa = 0, d0 = 0, z0 = 1;
+  cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); pt.set(e.pointerId, [e.clientX, e.clientY]); mossa = 0; if (pt.size === 2) { const [a, b] = [...pt.values()]; d0 = Math.hypot(a[0] - b[0], a[1] - b[1]); z0 = z; } });
+  cv.addEventListener('pointermove', e => {
+    if (!pt.has(e.pointerId)) return;
+    const [px, py] = pt.get(e.pointerId); pt.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pt.size === 1) { ox += (e.clientX - px) / z; oy += (e.clientY - py) / z; mossa += Math.abs(e.clientX - px) + Math.abs(e.clientY - py); draw(); }
+    else if (pt.size === 2) { const [a, b] = [...pt.values()]; z = Math.max(0.8, Math.min(12, z0 * Math.hypot(a[0] - b[0], a[1] - b[1]) / d0)); mossa = 99; draw(); }
+  });
+  cv.addEventListener('pointerup', e => {
+    pt.delete(e.pointerId);
+    if (mossa < 6) {
+      const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+      let best = -1, bd = 18 * 18;
+      for (let i = 0; i < N; i++) { const dx = sx(XY[i][0]) - x, dy = sy(XY[i][1]) - y, dd = dx * dx + dy * dy; if (dd < bd) { bd = dd; best = i; } }
+      if (best >= 0) scegli(best, false);
+    }
+  });
+  cv.addEventListener('wheel', e => { e.preventDefault(); z = Math.max(0.8, Math.min(12, z * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); draw(); }, { passive: false });
+
+  // ---- analogie ----
+  const PRESET = [['re', 'uomo', 'donna'], ['Parigi', 'Francia', 'Germania'], ['madre', 'padre', 'fratello'], ['calcio', 'pallone', 'tennis']].filter(p => p.every(w => trova(w) !== undefined));
+  $('preset').innerHTML = PRESET.map((p, k) => `<button data-k="${k}">${p[0]} − ${p[1]} + ${p[2]}</button>`).join('');
+  $('preset').onclick = e => { const b = e.target.closest('button[data-k]'); if (!b) return; [$('a').value, $('b').value, $('c').value] = PRESET[+b.dataset.k]; analogia(); };
+  function analogia() {
+    const ia = trova($('a').value), ib = trova($('b').value), ic = trova($('c').value);
+    const manca = [[ia, 'a'], [ib, 'b'], [ic, 'c']].find(x => x[0] === undefined);
+    if (manca) { $('esito').textContent = `«${$(manca[1]).value}» non è tra le parole della mappa.`; return; }
+    const v = new Float32Array(D), A = vec(ia), B = vec(ib), Cc = vec(ic);
+    for (let d = 0; d < D; d++) v[d] = A[d] - B[d] + Cc[d];
+    const r = vicini(v, 4, [ia, ib, ic]);
+    $('esito').innerHTML = `≈ <b>${P[r[0]]}</b> <span class="note">poi: ${r.slice(1).map(i => P[i]).join(', ')}</span>`;
+    sel = r[0]; linee = []; freccia = [ic, r[0]];
+    $('sel-t').innerHTML = `Risultato: <b>${P[r[0]]}</b>`; $('vicini').innerHTML = '';
+    centra(r[0], 2.2);
+  }
+  ['a', 'b', 'c'].forEach(k => $(k).addEventListener('change', analogia));
+
+  // ---- direzione lei/lui ----
+  const coppie = [['donna', 'uomo'], ['madre', 'padre'], ['ragazza', 'ragazzo']].filter(c => c.every(w => trova(w) !== undefined));
+  const g = new Float32Array(D);
+  for (const [f, m] of coppie) { const F_ = vec(trova(f)), M = vec(trova(m)); for (let d = 0; d < D; d++) g[d] += F_[d] - M[d]; }
+  let gn = 0; for (let d = 0; d < D; d++) gn += g[d] * g[d]; gn = Math.sqrt(gn);
+  const PROF = ['elettricista', 'pilota', 'manager', 'camionista', 'dentista', 'farmacista', 'giornalista', 'insegnante', 'cantante', 'stilista', 'estetista', 'babysitter', 'badante'].filter(w => trova(w) !== undefined);
+  const val = PROF.map(w => [w, dot(vec(trova(w)), g) / gn]).sort((x, y) => x[1] - y[1]);
+  const mx = Math.max(...val.map(v => Math.abs(v[1])));
+  $('barre').innerHTML = val.map(([w, v]) => `<div class="barra"><div class="nome">${w}</div><div class="tr"><div class="b" style="${v < 0 ? `right:50%;width:${-v / mx * 50}%;background:var(--accent-2)` : `left:50%;width:${v / mx * 50}%;background:var(--accent)`}"></div></div></div>`).join('');
+
+  new ResizeObserver(resize).observe(cv);
+  const s = trova('Siena'); if (s !== undefined) { scegli(s, false); z = 1; ox = oy = 0; draw(); }
+})();
+</script>
+</body>
+</html>

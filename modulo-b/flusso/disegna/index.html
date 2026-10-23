@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disegnato mentre parlo</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../../modulo-a/comune/tema.css">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); font-family: var(--body); }
+  #palco { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background: var(--bg); }
+  #palco svg { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+  svg text { font-family: var(--body); }
+  svg text:not([fill]) { fill: var(--fg); }
+  .kicker { position: absolute; left: 140px; top: 70px; font-family: var(--mono); font-size: 24px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  #titolo { position: absolute; left: 140px; top: 112px; width: 1640px; font-family: var(--head); font-weight: 600; font-size: 54px; line-height: 1.05; letter-spacing: -.02em; min-height: 70px; }
+  #note { position: absolute; left: 1560px; top: 240px; width: 320px; display: grid; gap: 18px; }
+  .nota { background: var(--surface); border-radius: 14px; padding: 16px 20px; font-size: 26px; line-height: 1.3; }
+  #ascolto { position: absolute; left: 140px; bottom: 34px; width: 1100px; font-size: 26px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #ascolto b { color: var(--fg); font-weight: 500; }
+  #stato { position: absolute; right: 40px; bottom: 34px; font-family: var(--mono); font-size: 20px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+  #stato i { width: 14px; height: 14px; border-radius: 50%; background: var(--line); display: inline-block; }
+  #stato.ascolta i { background: var(--ok); animation: pulsa 1.2s infinite; }
+  #stato.pensa i { background: var(--accent); animation: pulsa .5s infinite; }
+  #stato.errore i { background: var(--accent); }
+  @keyframes pulsa { 50% { opacity: .3; } }
+  #chiamata { position: absolute; right: 40px; bottom: 80px; width: 440px; max-height: 300px; overflow: hidden; font-family: var(--mono); font-size: 15px; line-height: 1.4; color: var(--muted); background: var(--surface); border-radius: 12px; padding: 12px 16px; white-space: pre-wrap; word-break: break-all; opacity: .9; font-variant-ligatures: none; }
+  #chiamata:empty { display: none; }
+  #chiamata b { color: var(--accent); }
+
+  #pannello { position: fixed; top: 16px; right: 16px; width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; background: var(--bg); border: 2px solid var(--fg); border-radius: 14px; padding: 18px; box-sizing: border-box; display: grid; gap: 12px; font-size: 15px; z-index: 5; box-shadow: 8px 8px 0 var(--accent); }
+  #pannello[hidden] { display: none; }
+  #pannello h2 { margin: 0; font-family: var(--head); font-size: 22px; }
+  #pannello label { display: grid; gap: 4px; color: var(--muted); font-size: 13px; }
+  #pannello input { font: inherit; font-size: 15px; padding: 9px 10px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--bg); color: var(--fg); }
+  #pannello .riga { display: flex; flex-wrap: wrap; gap: 8px; }
+  #pannello button { font: 600 14px var(--body); padding: 9px 12px; border-radius: 9px; border: 1.5px solid var(--fg); background: transparent; color: var(--fg); cursor: pointer; }
+  #pannello button.primario { background: var(--fg); color: var(--bg); }
+  #pannello .avviso { font-size: 13px; color: var(--muted); margin: 0; }
+  #pannello .avviso b { color: var(--accent); }
+  #apri { position: fixed; top: 12px; right: 12px; z-index: 4; font: 600 14px var(--body); border: 0; border-radius: 8px; padding: 8px 12px; background: var(--surface); color: var(--muted); cursor: pointer; opacity: .6; }
+</style>
+</head>
+<body>
+<div id="palco">
+  <div class="kicker">Esperimento · disegnato mentre parlo</div>
+  <div id="titolo"></div>
+  <svg viewBox="0 0 1920 1080" id="tela"><g id="g-assi"></g><g id="g-linee"></g><g id="g-punti"></g><g id="g-etich"></g></svg>
+  <div id="note"></div>
+  <div id="chiamata"></div>
+  <div id="ascolto"></div>
+  <div id="stato"><i></i><span id="stato-t">fermo</span></div>
+</div>
+
+<button id="apri">impostazioni (S)</button>
+<section id="pannello">
+  <h2>Impostazioni</h2>
+  <label>Chiave API Anthropic <input type="password" id="chiave" placeholder="sk-ant-…" autocomplete="off"></label>
+  <p class="avviso">La chiave resta solo in questo browser. Usa una chiave dedicata con un tetto di spesa basso e <b>revocala dopo la lezione</b>.</p>
+  <label>Modello <input id="modello" value="claude-haiku-5-5"></label>
+  <div class="riga">
+    <button class="primario" id="ascolta">🎙 Ascolta</button>
+    <button id="ferma">Ferma</button>
+    <button id="pulisci">Cancella il grafico</button>
+  </div>
+  <label>Prova senza microfono: scrivi una frase e premi Invio <input id="frase" placeholder="Nel 2019 GPT-2 finiva compiti da un paio di secondi…"></label>
+  <div class="riga">
+    <button id="prova">Prova con una trascrizione registrata</button>
+    <button id="riserva">Disegno di riserva (senza IA)</button>
+  </div>
+  <p class="avviso">Tasti: <b>S</b> mostra/nasconde questo pannello · <b>J</b> mostra/nasconde la chiamata allo strumento · <b>R</b> disegno di riserva · <b>Esc</b> torna al flusso. Il riconoscimento vocale di Chrome manda l'audio ai server di Google.</p>
+  <p class="avviso" id="diagnosi"></p>
+</section>
+
+<script src="../../../vendor/gsap/gsap.min.js"></script>
+<script src="../../../vendor/gsap/DrawSVGPlugin.min.js"></script>
+<script type="module">
+import Anthropic from '../../../vendor/anthropic-sdk/anthropic-sdk-0.132.1.mjs';
+
+gsap.registerPlugin(DrawSVGPlugin);
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); parent?.appendChild(e); return e; };
+const memo = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+
+// ---------- palco ----------
+const adatta = () => { const s = Math.min(innerWidth / 1920, innerHeight / 1080); $('palco').style.transform = `translate(${(innerWidth - 1920 * s) / 2}px,${(innerHeight - 1080 * s) / 2}px) scale(${s})`; };
+addEventListener('resize', adatta); adatta();
+
+// ---------- il grafico: stato e operazioni ----------
+// Area del grafico in coordinate del palco. Gli assi fissano la trasformazione dati → pixel.
+const AREA = { x0: 230, x1: 1400, y0: 900, y1: 310 };
+let stato, assi = null, etichette = [];
+function nuovoStato() {
+  stato = { titolo: '', assi: null, punti: {}, linee: {}, note: {} };
+  assi = null; etichette = [];
+  $('titolo').textContent = ''; $('note').innerHTML = '';
+  for (const g of ['g-assi', 'g-linee', 'g-punti', 'g-etich']) $(g).innerHTML = '';
+}
+const sx = x => AREA.x0 + (x - assi.xmin) / (assi.xmax - assi.xmin) * (AREA.x1 - AREA.x0);
+const sy = y => {
+  const t = assi.log ? (Math.log10(Math.max(y, 1e-9)) - Math.log10(assi.ymin)) / (Math.log10(assi.ymax) - Math.log10(assi.ymin)) : (y - assi.ymin) / (assi.ymax - assi.ymin);
+  return AREA.y0 - Math.max(-0.05, Math.min(1.05, t)) * (AREA.y0 - AREA.y1);
+};
+// etichette dei valori: se l'asse è in minuti, in secondi, minuti e ore
+function fmt(v, inMinuti) {
+  if (inMinuti) {
+    if (v < 1) return `${Math.round(v * 60)} s`;
+    if (v < 60) return `${+v.toPrecision(2)} min`;
+    return `${+(v / 60).toPrecision(2)} ${Math.round(v / 60) === 1 ? 'ora' : 'ore'}`;
+  }
+  return String(+v.toPrecision(3)).replace('.', ',');
+}
+function tick(min, max, log, inMinuti) {
+  if (log && inMinuti) return [1 / 60, 10 / 60, 1, 10, 60, 600, 6000].filter(v => v >= min * 0.999 && v <= max * 1.001);
+  if (log) { const out = []; for (let e = Math.ceil(Math.log10(min)); e <= Math.floor(Math.log10(max)); e++) out.push(10 ** e); return out; }
+  const passo = 10 ** Math.floor(Math.log10((max - min) / 5)), out = [];
+  for (let v = Math.ceil(min / passo) * passo; v <= max; v += passo) out.push(+v.toFixed(6));
+  return out.length > 9 ? out.filter((_, k) => k % 2 === 0) : out;
+}
+
+const OP = {
+  titolo(o) { stato.titolo = o.testo || ''; $('titolo').textContent = stato.titolo; gsap.fromTo('#titolo', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.6 }); },
+  assi(o) {
+    const [ex, ey] = (o.testo || '|').split('|').map(s => s.trim());
+    assi = { xmin: o.x ?? 0, xmax: o.x2 ?? 10, ymin: o.y ?? 0, ymax: o.y2 ?? 10, log: o.scala_y === 'log', ex: ex || '', ey: ey || '' };
+    if (assi.log && assi.ymin <= 0) assi.ymin = assi.ymax / 1e5;
+    stato.assi = { ...assi };
+    const g = $('g-assi'); g.innerHTML = '';
+    const inMin = /min/i.test(assi.ey);
+    for (const v of tick(assi.ymin, assi.ymax, assi.log, inMin)) {
+      el('line', { x1: AREA.x0, x2: AREA.x1, y1: sy(v), y2: sy(v), stroke: 'var(--line)', 'stroke-width': 1.5, class: 'gr' }, g);
+      el('text', { x: AREA.x0 - 14, y: sy(v) + 8, 'text-anchor': 'end', 'font-size': 22, fill: 'var(--muted)', class: 'gt' }, g).textContent = fmt(v, inMin);
+    }
+    for (const v of tick(assi.xmin, assi.xmax, false)) el('text', { x: sx(v), y: AREA.y0 + 40, 'text-anchor': 'middle', 'font-size': 22, fill: 'var(--muted)', class: 'gt' }, g).textContent = Number.isInteger(v) && v > 1800 ? v : fmt(v, false);
+    const ax = el('line', { x1: AREA.x0, y1: AREA.y0, x2: AREA.x1, y2: AREA.y0, stroke: 'var(--fg)', 'stroke-width': 3 }, g);
+    const ay = el('line', { x1: AREA.x0, y1: AREA.y0, x2: AREA.x0, y2: AREA.y1 - 20, stroke: 'var(--fg)', 'stroke-width': 3 }, g);
+    el('text', { x: AREA.x1, y: AREA.y0 + 80, 'text-anchor': 'end', 'font-size': 24, fill: 'var(--muted)', class: 'gt' }, g).textContent = assi.ex + (assi.ex ? ' →' : '');
+    el('text', { x: AREA.x0, y: AREA.y1 - 40, 'text-anchor': 'start', 'font-size': 24, fill: 'var(--muted)', class: 'gt' }, g).textContent = (assi.ey ? '↑ ' + assi.ey : '') + (assi.log ? ' (scala logaritmica)' : '');
+    gsap.fromTo([ax, ay], { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.8 });
+    gsap.fromTo(g.querySelectorAll('.gr'), { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.6, stagger: 0.05, delay: 0.4 });
+    gsap.fromTo(g.querySelectorAll('.gt'), { opacity: 0 }, { opacity: 1, duration: 0.4, stagger: 0.03, delay: 0.5 });
+    // ridisegna in nuova scala quello che c'era già
+    etichette = [];
+    for (const p of Object.values(stato.punti)) OP.punto(p, true);
+    for (const l of Object.values(stato.linee)) OP.linea(l, true);
+  },
+  punto(o, ridisegna = false) {
+    if (!assi || o.x == null || o.y == null) return;
+    stato.punti[o.id] = { tipo: 'punto', id: o.id, x: o.x, y: o.y, testo: o.testo || '' };
+    document.querySelectorAll(`[data-id="${CSS.escape(o.id)}"]`).forEach(e => e.remove());
+    const g = el('g', { 'data-id': o.id }, $('g-punti'));
+    const c = el('circle', { cx: sx(o.x), cy: sy(o.y), r: 12, fill: 'var(--fg)' }, g);
+    // le etichette stanno in uno strato sopra i pallini, con un alone del colore di fondo
+    const t = el('text', { 'font-size': 24, 'font-weight': 600, 'data-id': o.id, stroke: 'var(--bg)', 'stroke-width': 7, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, $('g-etich'));
+    t.textContent = o.testo || '';
+    const w = t.getComputedTextLength(), X = sx(o.x), Y = sy(o.y);
+    // anche i pallini degli altri punti contano come ostacoli
+    for (const q of Object.values(stato.punti)) if (q.id !== o.id) etichette.push([sx(q.x) - 13, sy(q.y) - 13, sx(q.x) + 13, sy(q.y) + 13]);
+    const posti = [[18, -16, 'start'], [18, 34, 'start'], [-18, -16, 'end'], [-18, 34, 'end']];
+    const box = ([dx, dy, a]) => { const x0 = a === 'end' ? X + dx - w : X + dx; return [x0, Y + dy - 22, x0 + w, Y + dy + 4]; };
+    const libero = r => r[2] < AREA.x1 + 60 && !etichette.some(e => r[0] < e[2] && r[2] > e[0] && r[1] < e[3] && r[3] > e[1]);
+    const scelto = posti.find(q => libero(box(q))) || posti[0];
+    etichette.push(box(scelto));
+    t.setAttribute('x', X + scelto[0]); t.setAttribute('y', Y + scelto[1]); t.setAttribute('text-anchor', scelto[2]);
+    if (!ridisegna) { gsap.fromTo(c, { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: 0.5, ease: 'back.out(3)' }); gsap.fromTo(t, { opacity: 0 }, { opacity: 1, duration: 0.4, delay: 0.2 }); }
+  },
+  linea(o, ridisegna = false) {
+    if (!assi || [o.x, o.y, o.x2, o.y2].some(v => v == null)) return;
+    stato.linee[o.id] = { tipo: 'linea', id: o.id, x: o.x, y: o.y, x2: o.x2, y2: o.y2, testo: o.testo || '' };
+    document.querySelectorAll(`[data-id="${CSS.escape(o.id)}"]`).forEach(e => e.remove());
+    const g = el('g', { 'data-id': o.id }, $('g-linee'));
+    const l = el('line', { x1: sx(o.x), y1: sy(o.y), x2: sx(o.x2), y2: sy(o.y2), stroke: 'var(--accent-2)', 'stroke-width': 5, 'stroke-linecap': 'round' }, g);
+    if (o.testo) { const mx = sx(o.x) + (sx(o.x2) - sx(o.x)) * 0.6, my = sy(o.y) + (sy(o.y2) - sy(o.y)) * 0.6; const t = el('text', { x: mx + 20, y: my + 44, 'text-anchor': 'start', 'font-size': 24, fill: 'var(--accent-2)', 'font-weight': 600 }, g); t.textContent = o.testo; if (!ridisegna) gsap.fromTo(t, { opacity: 0 }, { opacity: 1, delay: 0.9 }); }
+    if (!ridisegna) gsap.fromTo(l, { drawSVG: '0%' }, { drawSVG: '100%', duration: 1.2, ease: 'power2.inOut' });
+  },
+  nota(o) {
+    if (!o.testo) return;
+    stato.note[o.id] = { tipo: 'nota', id: o.id, testo: o.testo };
+    let d = $('note').querySelector(`[data-id="${CSS.escape(o.id)}"]`);
+    if (!d) { d = document.createElement('div'); d.className = 'nota'; d.dataset.id = o.id; $('note').appendChild(d); gsap.fromTo(d, { autoAlpha: 0, x: 40 }, { autoAlpha: 1, x: 0, duration: 0.5 }); }
+    d.textContent = o.testo;
+  },
+  evidenzia(o) {
+    const g = document.querySelector(`[data-id="${CSS.escape(o.id)}"]`);
+    if (!g) return;
+    const c = g.querySelector('circle, line');
+    if (c) gsap.fromTo(c, { attr: c.tagName === 'circle' ? { r: 12 } : {} }, { attr: c.tagName === 'circle' ? { r: 22, fill: 'var(--accent)' } : { stroke: 'var(--accent)' }, duration: 0.4, yoyo: c.tagName !== 'circle', repeat: c.tagName === 'circle' ? 0 : 1 });
+    if (g.classList.contains('nota')) gsap.fromTo(g, { backgroundColor: 'rgba(228,87,46,.5)' }, { backgroundColor: 'rgba(242,236,226,1)', duration: 1.2 });
+  },
+  cancella(o) {
+    if (o.id === '*') return nuovoStato();
+    delete stato.punti[o.id]; delete stato.linee[o.id]; delete stato.note[o.id];
+    document.querySelectorAll(`[data-id="${CSS.escape(o.id)}"]`).forEach(e => gsap.to(e, { autoAlpha: 0, duration: 0.3, onComplete: () => e.remove() }));
+  },
+};
+function applica(ops) {
+  // gli assi prima di tutto, poi il resto con un piccolo ritmo
+  const ord = [...ops].sort((a, b) => (b.tipo === 'assi') - (a.tipo === 'assi'));
+  ord.forEach((o, k) => setTimeout(() => { try { OP[o.tipo]?.(o); } catch (e) { console.warn(e); } }, k * 260 + (o.tipo !== 'assi' && ord[0]?.tipo === 'assi' ? 700 : 0)));
+}
+
+// ---------- il modello e lo strumento ----------
+const STRUMENTO = {
+  name: 'disegna',
+  description: 'Aggiunge, modifica o toglie elementi del grafico proiettato in aula. Ogni operazione ha un tipo e un id stabile (riusa lo stesso id per modificare un elemento già presente). Valori numerici nelle unità degli assi.',
+  input_schema: {
+    type: 'object', additionalProperties: false, required: ['operazioni'],
+    properties: {
+      operazioni: {
+        type: 'array',
+        items: {
+          type: 'object', additionalProperties: false, required: ['tipo', 'id'],
+          properties: {
+            tipo: { type: 'string', enum: ['titolo', 'assi', 'punto', 'linea', 'nota', 'evidenzia', 'cancella'] },
+            id: { type: 'string', description: 'Identificatore stabile, per esempio "p-gpt4" o "tendenza". Per cancellare tutto: "*".' },
+            testo: { type: 'string', description: 'titolo: il titolo; assi: "etichetta asse x | etichetta asse y"; punto: etichetta breve; linea: etichetta facoltativa; nota: al massimo 10 parole.' },
+            x: { type: 'number', description: 'assi: minimo x; punto e linea: x (gli anni come numeri decimali, es. 2023.2)' },
+            y: { type: 'number', description: 'assi: minimo y; punto e linea: y' },
+            x2: { type: 'number', description: 'assi: massimo x; linea: x finale' },
+            y2: { type: 'number', description: 'assi: massimo y; linea: y finale' },
+            scala_y: { type: 'string', enum: ['lineare', 'log'], description: 'solo per gli assi' },
+          },
+        },
+      },
+    },
+  },
+};
+const SISTEMA = `Disegni in tempo reale un grafico che viene proiettato in un'aula universitaria mentre un docente parla, in italiano.
+Ricevi la trascrizione automatica della sua voce (può contenere errori di riconoscimento) e lo stato attuale del grafico.
+Rispondi chiamando sempre e solo lo strumento "disegna", con le sole operazioni nuove; se le ultime frasi non aggiungono niente da disegnare, chiamalo con una lista vuota.
+
+Regole:
+- Disegna solo ciò che il docente dice. Non inventare dati, modelli o valori che non ha nominato.
+- Il tema previsto è la durata dei compiti che un agente di IA porta a termine da solo, nel tempo (i dati di METR). Se il docente parla di questo e gli assi non ci sono ancora, crea gli assi: x da 2018 a 2027 (anni, etichetta "anno"), y in minuti in scala logaritmica da 0,01 a 2000 (etichetta "durata del compito, in minuti"), e un titolo breve.
+- Converti le durate in minuti: 2 secondi = 0.033, 10 secondi = 0.17, 5 minuti = 5, un'ora = 60, cinque ore = 300, dodici ore = 720.
+- Gli anni sono numeri decimali: inizio anno ≈ .1, metà ≈ .5, fine ≈ .9.
+- Un punto per ogni modello nominato con il suo valore; etichetta = nome del modello.
+- Se il docente parla di tendenza, crescita esponenziale o raddoppio, traccia una linea "tendenza" che attraversa i punti, con un'etichetta breve.
+- Le note sono brevi (al massimo 10 parole) e riassumono un'idea detta a voce, non la ripetono parola per parola.
+- Usa id stabili e non ricreare elementi già presenti.`;
+
+let client = null, chiave = '';
+function preparaClient() {
+  chiave = $('chiave').value.trim();
+  memo.set('chiave-anthropic', chiave);
+  client = chiave ? new Anthropic({ apiKey: chiave, dangerouslyAllowBrowser: true }) : null;
+}
+const frasi = [];
+let inviate = 0, inVolo = false;
+function setStato(cls, t) { $('stato').className = cls; $('stato-t').textContent = t; }
+async function chiedi() {
+  if (inVolo || inviate >= frasi.length) return;
+  if (!client) { setStato('errore', 'manca la chiave API (S)'); return; }
+  inVolo = true;
+  const nuove = frasi.slice(inviate); inviate = frasi.length;
+  setStato('pensa', 'disegno…');
+  const t0 = performance.now();
+  try {
+    const risposta = await client.messages.create({
+      model: $('modello').value.trim() || 'claude-haiku-5-5',
+      max_tokens: 2048,
+      thinking: { type: 'disabled' },
+      system: SISTEMA,
+      tools: [STRUMENTO],
+      tool_choice: { type: 'auto' },
+      messages: [{ role: 'user', content: `Stato attuale del grafico (JSON):\n${JSON.stringify(stato)}\n\nTrascrizione precedente:\n${frasi.slice(0, frasi.length - nuove.length).join(' ') || '(niente)'}\n\nFrasi nuove:\n${nuove.join(' ')}` }],
+    });
+    if (risposta.stop_reason === 'refusal') throw new Error('richiesta rifiutata dal modello');
+    const chiamate = risposta.content.filter(b => b.type === 'tool_use' && b.name === 'disegna');
+    const ops = chiamate.flatMap(b => Array.isArray(b.input?.operazioni) ? b.input.operazioni : []).filter(o => o && OP[o.tipo] && typeof o.id === 'string');
+    mostraChiamata(ops, performance.now() - t0);
+    applica(ops);
+    setStato(ascoltando ? 'ascolta' : '', ascoltando ? 'ascolto' : 'fermo');
+  } catch (e) {
+    console.error(e);
+    setStato('errore', e?.status === 401 ? 'chiave non valida' : 'errore: ' + (e?.message || e).toString().slice(0, 60));
+    $('diagnosi').textContent = String(e?.message || e);
+  } finally {
+    inVolo = false;
+    if (inviate < frasi.length) chiedi();
+  }
+}
+function mostraChiamata(ops, ms) {
+  const righe = ops.map(o => JSON.stringify(Object.fromEntries(Object.entries(o).filter(([, v]) => v != null && v !== '')))).join('\n');
+  $('chiamata').innerHTML = `<b>disegna</b>(operazioni) · ${(ms / 1000).toFixed(1).replace('.', ',')} s\n` + (righe || '[] (niente da disegnare)').replace(/</g, '&lt;');
+}
+function aggiungiFrase(f) { f = f.trim(); if (!f) return; frasi.push(f); $('ascolto').innerHTML = `<b>${f.replace(/</g, '&lt;')}</b>`; chiedi(); }
+
+// ---------- la voce ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, ascoltando = false;
+function ascolta() {
+  preparaClient();
+  if (!SR) { setStato('errore', 'riconoscimento vocale non disponibile: usa Chrome'); return; }
+  if (!rec) {
+    rec = new SR(); rec.lang = 'it-IT'; rec.continuous = true; rec.interimResults = true;
+    rec.onresult = e => {
+      let provvisorio = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) aggiungiFrase(r[0].transcript); else provvisorio += r[0].transcript;
+      }
+      if (provvisorio) $('ascolto').innerHTML = `${provvisorio.replace(/</g, '&lt;')}`;
+    };
+    rec.onerror = e => { if (e.error !== 'no-speech') setStato('errore', 'microfono: ' + e.error); };
+    rec.onend = () => { if (ascoltando) try { rec.start(); } catch {} };
+  }
+  ascoltando = true;
+  try { rec.start(); } catch {}
+  setStato('ascolta', 'ascolto');
+  $('pannello').hidden = true;
+}
+function ferma() { ascoltando = false; rec?.stop(); setStato('', 'fermo'); }
+
+// ---------- paracadute ----------
+const RISERVA = [
+  { tipo: 'titolo', id: 't', testo: 'Quanto è lungo un compito che un agente sa finire da solo' },
+  { tipo: 'assi', id: 'a', testo: 'anno | durata del compito, in minuti', x: 2018, x2: 2027, y: 0.01, y2: 2000, scala_y: 'log' },
+  { tipo: 'punto', id: 'p-gpt2', x: 2019.1, y: 0.033, testo: 'GPT-2' },
+  { tipo: 'punto', id: 'p-gpt3', x: 2020.4, y: 0.15, testo: 'GPT-3' },
+  { tipo: 'punto', id: 'p-gpt4', x: 2023.2, y: 5, testo: 'GPT-4' },
+  { tipo: 'punto', id: 'p-o1', x: 2024.95, y: 39, testo: 'o1' },
+  { tipo: 'punto', id: 'p-c37', x: 2025.15, y: 59, testo: 'Claude 3.7 Sonnet' },
+  { tipo: 'punto', id: 'p-o45', x: 2025.9, y: 293, testo: 'Claude Opus 4.5' },
+  { tipo: 'punto', id: 'p-o46', x: 2026.1, y: 720, testo: 'Claude Opus 4.6' },
+  { tipo: 'linea', id: 'tendenza', x: 2019.1, y: 0.033, x2: 2026.6, y2: 300, testo: 'raddoppia ogni ~7 mesi' },
+  { tipo: 'nota', id: 'n1', testo: 'Inizio 2025: un\'ora di lavoro' },
+  { tipo: 'nota', id: 'n2', testo: 'Inizio 2026: mezza giornata' },
+];
+const PROVA = [
+  'Adesso vi racconto un grafico: quanto è lungo un compito che un agente riesce a finire da solo.',
+  'Nel 2019 GPT-2 riusciva a finire solo compiti da un paio di secondi.',
+  'Un anno dopo, GPT-3 arrivava a una decina di secondi.',
+  'Nel 2023 GPT-4 faceva compiti da cinque minuti.',
+  'Alla fine del 2024 o1 arriva a una quarantina di minuti, e a febbraio 2025 Claude 3.7 Sonnet a un\'ora.',
+  'A novembre 2025 Claude Opus 4.5 quasi cinque ore, e a febbraio 2026 Opus 4.6 dodici ore.',
+  'Se guardate bene è una crescita esponenziale: raddoppia circa ogni sette mesi.',
+];
+
+// ---------- comandi ----------
+$('chiave').value = memo.get('chiave-anthropic') || '';
+$('ascolta').onclick = ascolta;
+$('ferma').onclick = ferma;
+$('pulisci').onclick = () => { nuovoStato(); $('chiamata').innerHTML = ''; frasi.length = 0; inviate = 0; };
+$('riserva').onclick = () => { nuovoStato(); applica(RISERVA); mostraChiamata(RISERVA, 0); $('pannello').hidden = true; };
+$('prova').onclick = () => { preparaClient(); nuovoStato(); frasi.length = 0; inviate = 0; $('pannello').hidden = true; PROVA.forEach((f, k) => setTimeout(() => aggiungiFrase(f), k * 3500)); };
+$('frase').addEventListener('keydown', e => { if (e.key === 'Enter') { preparaClient(); aggiungiFrase($('frase').value); $('frase').value = ''; } });
+$('chiave').addEventListener('change', preparaClient);
+$('apri').onclick = () => { $('pannello').hidden = !$('pannello').hidden; };
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 's' || e.key === 'S') $('pannello').hidden = !$('pannello').hidden;
+  if (e.key === 'j' || e.key === 'J') $('chiamata').hidden = !$('chiamata').hidden;
+  if (e.key === 'r' || e.key === 'R') $('riserva').click();
+  if (e.key === 'Escape') history.length > 1 ? history.back() : (location.href = '../#metr');
+});
+nuovoStato();
+window.disegno = { applica, aggiungiFrase, stato: () => stato };
+</script>
+</body>
+</html>

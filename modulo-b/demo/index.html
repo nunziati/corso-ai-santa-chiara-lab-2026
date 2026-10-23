@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo — IA generativa</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../modulo-a/comune/demo.css">
+<style>
+  .list { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 28px; }
+  .list h2 { font-family: var(--head); font-weight: var(--head-w); font-size: 20px; margin: 0 0 8px; }
+  .list ol, .list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .list a.item { display: grid; grid-template-columns: 1fr; gap: 4px 12px; padding: 14px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--fg); }
+  .list a.item b { font-size: 19px; font-weight: 600; }
+  .list a.item span { color: var(--muted); font-size: 15px; }
+</style>
+</head>
+<body>
+<main class="list">
+  <header class="demo-head">
+    <div class="kicker">AI for Future · Modulo B</div>
+    <h1>Le demo della giornata</h1>
+    <p>Funzionano dal telefono. Tocca, disegna, rompi: non si rompe niente.</p>
+  </header>
+
+  <section>
+    <h2>Le nostre</h2>
+    <ol>
+      <li><a class="item" href="rumore.html"><b>Dal rumore alla forma</b><span>Disegna una forma e guarda la diffusione ricomporla dal rumore.</span></a></li>
+      <li><a class="item" href="completatore.html"><b>Il completatore</b><span>Un modello di linguaggio addestrato su Pinocchio, nel tuo telefono.</span></a></li>
+      <li><a class="item" href="parole.html"><b>Mappa delle parole</b><span>Embedding italiani: vicini, analogie, direzioni che non vorremmo.</span></a></li>
+      <li><a class="item" href="filigrana.html"><b>La filigrana</b><span>Nascondere un segnale in un testo generato, e provare a toglierlo.</span></a></li>
+      <li><a class="item" href="agente.html"><b>L'agente</b><span>Un passo alla volta: decide, esegue, riempie il contesto. E l'email avvelenata.</span></a></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Di altri, da provare</h2>
+    <ul>
+      <li><a class="item" href="https://www.whichfaceisreal.com/" target="_blank" rel="noopener"><b>Which Face Is Real</b><span>Università di Washington. Un volto vero e uno generato: quale è quale?</span></a></li>
+      <li><a class="item" href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener"><b>Tiktokenizer</b><span>Come un modello spezza il testo in token. Prova italiano e inglese.</span></a></li>
+      <li><a class="item" href="https://poloclub.github.io/transformer-explainer/" target="_blank" rel="noopener"><b>Transformer Explainer</b><span>Un GPT-2 vero nel browser: attenzione e probabilità del token successivo.</span></a></li>
+      <li><a class="item" href="https://gandalf.lakera.ai/" target="_blank" rel="noopener"><b>Gandalf</b><span>Lakera. Convinci un modello a rivelare la password: i guardrail alla prova.</span></a></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

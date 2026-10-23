@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Il completatore</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../modulo-a/comune/demo.css">
+<style>
+  .testo { background: var(--surface); border-radius: 12px; padding: 16px 18px; font-family: var(--head); font-size: 22px; line-height: 1.5; min-height: 220px; }
+  .testo .nuova { color: var(--accent); }
+  .testo .copia { background: rgba(46, 94, 170, .16); border-radius: 4px; }
+  .testo .cursore { display: inline-block; width: 10px; height: 1.1em; background: var(--accent); vertical-align: -0.15em; animation: lampeggia 1s steps(2) infinite; }
+  @keyframes lampeggia { 50% { opacity: 0; } }
+  .scelte { display: grid; gap: 6px; }
+  .scelta { display: grid; grid-template-columns: 1fr; position: relative; min-height: 40px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); padding: 0; overflow: hidden; text-align: left; font-weight: 500; }
+  .scelta .riemp { position: absolute; inset: 0 auto 0 0; background: rgba(228, 87, 46, .18); }
+  .scelta .et { position: relative; display: flex; justify-content: space-between; padding: 9px 12px; font-size: 15px; }
+  .scelta .et i { font-style: normal; font-family: var(--mono); color: var(--muted); }
+  .avviso { font-size: 14px; min-height: 1.4em; margin: 0; }
+  .avviso.copiato { color: var(--accent-2); font-weight: 600; }
+  input[type="text"] { font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--fg); width: 100%; }
+</style>
+</head>
+<body>
+<main class="demo">
+  <header class="demo-head">
+    <div class="kicker">Demo · Modello di linguaggio</div>
+    <h1>Il completatore</h1>
+    <p>Un modello di linguaggio piccolissimo, addestrato qui nel telefono su tutto <i>Pinocchio</i>: conta quali parole vengono dopo quali. Scegli quante parole guarda, e lascialo scrivere.</p>
+  </header>
+
+  <section class="stage" style="background:transparent">
+    <div class="testo" id="testo" aria-live="polite"></div>
+    <p class="avviso" id="avviso"></p>
+  </section>
+
+  <section class="panel">
+    <div class="control">
+      <label for="n"><span>Quante parole guarda prima di scegliere</span> <output id="no"></output></label>
+      <input type="range" id="n" min="1" max="4" step="1" value="2">
+    </div>
+    <div class="control">
+      <label for="temp"><span>Temperatura (quanto rischia)</span> <output id="tempo"></output></label>
+      <input type="range" id="temp" min="0.2" max="2" step="0.1" value="1">
+    </div>
+    <div class="scelte" id="scelte"></div>
+    <div class="buttons">
+      <button class="primary" id="auto">Scrivi da solo</button>
+      <button id="una">Una parola a caso</button>
+      <button id="reset">Ricomincia</button>
+    </div>
+    <div class="control">
+      <label for="inizio"><span>Inizio del testo</span></label>
+      <input type="text" id="inizio" value="C'era una volta">
+    </div>
+    <p class="note">Tocca una delle parole proposte per sceglierla tu. Con <b>1 parola</b> esce un minestrone; con <b>4</b> il modello ricopia il libro: le parti evidenziate in azzurro sono copiate parola per parola. Un LLM guarda tutto il testo, non solo le ultime parole: per questo può essere coerente senza copiare.</p>
+    <p class="note">Testo: Carlo Collodi, <i>Le avventure di Pinocchio</i>, Project Gutenberg (pubblico dominio).</p>
+    <a class="back" href="./">← tutte le demo</a>
+  </section>
+</main>
+
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  const libro = await (await fetch('dati/pinocchio.txt')).text();
+  // token: parole (con l'apostrofo attaccato) e punteggiatura
+  const tok = s => s.toLowerCase().replace(/[—–]/g, ' — ').match(/[a-zàèéìòùç]+'?|[.,;:!?—]/g) || [];
+  const T = tok(libro);
+  const testoLibro = ' ' + T.join(' ') + ' ';
+  // nomi propri: parole che nel libro, a metà frase, sono quasi sempre maiuscole
+  const NOMI = (() => {
+    const c = new Map(); let prec = '.';
+    for (const m of libro.matchAll(/[A-Za-zÀ-ÿ]+'?|[.,;:!?—]/g)) {
+      const w = m[0], low = w.toLowerCase();
+      if (/[a-zà-ÿ]/i.test(w[0]) && !/[.!?—]/.test(prec)) { const v = c.get(low) || [0, 0]; v[w[0] === w[0].toUpperCase() ? 0 : 1]++; c.set(low, v); }
+      prec = w;
+    }
+    return new Set([...c].filter(([, [M, m]]) => M >= 3 && M > 4 * m).map(([w]) => w));
+  })();
+  const cap = w => w[0].toUpperCase() + w.slice(1);
+  // conteggi per contesti di 1, 2, 3, 4 parole
+  const tab = [null, new Map(), new Map(), new Map(), new Map()];
+  for (let i = 0; i < T.length - 1; i++) {
+    for (let n = 1; n <= 4 && i - n + 1 >= 0; n++) {
+      const ctx = T.slice(i - n + 1, i + 1).join(' ');
+      let m = tab[n].get(ctx); if (!m) tab[n].set(ctx, m = new Map());
+      m.set(T[i + 1], (m.get(T[i + 1]) || 0) + 1);
+    }
+  }
+  let parole = [], nuove = 0, timer = null;
+  const nCtx = () => +$('n').value, temp = () => +$('temp').value;
+  function distribuzione() {
+    for (let n = nCtx(); n >= 1; n--) {
+      if (parole.length < n) continue;
+      const m = tab[n].get(parole.slice(-n).join(' '));
+      if (m) {
+        const vs = [...m.entries()], tot = vs.reduce((a, b) => a + b[1], 0);
+        const pesi = vs.map(([w, c]) => [w, Math.pow(c / tot, 1 / temp())]);
+        const z = pesi.reduce((a, b) => a + b[1], 0);
+        return { n, ps: pesi.map(([w, p]) => [w, p / z]).sort((a, b) => b[1] - a[1]) };
+      }
+    }
+    const pv = [...tab[1].keys()]; return { n: 0, ps: [[pv[Math.floor(Math.random() * pv.length)], 1]] };
+  }
+  const pesca = ps => { let r = Math.random(); for (const [w, p] of ps) { if ((r -= p) <= 0) return w; } return ps[0][0]; };
+  function mostra() {
+    // evidenzia le parti copiate: sequenze di almeno 8 token che compaiono identiche nel libro
+    const copiata = new Array(parole.length).fill(false);
+    for (let i = 0; i + 8 <= parole.length; i++) if (testoLibro.includes(' ' + parole.slice(i, i + 8).join(' ') + ' ')) for (let k = i; k < i + 8; k++) copiata[k] = true;
+    let out = '', maiusc = true;
+    parole.forEach((w, i) => {
+      const nuova = i >= parole.length - nuove;
+      let t = (maiusc || NOMI.has(w)) && /[a-zà-ÿ]/.test(w[0]) ? cap(w) : w;
+      if (/^[a-zàèéìòù]/.test(w)) maiusc = false;
+      if (/[.!?]/.test(w)) maiusc = true;
+      const sp = i === 0 || /^[.,;:!?]$/.test(w) || /'$/.test(parole[i - 1]) ? '' : ' ';
+      out += sp + `<span class="${nuova ? 'nuova' : ''} ${copiata[i] && nuova ? 'copia' : ''}">${t}</span>`;
+    });
+    $('testo').innerHTML = out + ' <span class="cursore"></span>';
+    const d = distribuzione();
+    const quante = copiata.slice(-nuove).filter(Boolean).length;
+    $('avviso').className = 'avviso' + (quante > 8 ? ' copiato' : '');
+    $('avviso').textContent = d.n < nCtx() && parole.length >= nCtx() ? `Queste ${nCtx()} parole di fila non compaiono nel libro: il modello guarda solo le ultime ${d.n || 'nessuna'}.` :
+      quante > 8 ? `${quante} parole su ${nuove} sono copiate pari pari dal libro.` : '';
+    $('scelte').innerHTML = d.ps.slice(0, 6).map(([w, p]) => `<button class="scelta" data-w="${w}"><span class="riemp" style="width:${Math.max(2, p * 100)}%"></span><span class="et"><b>${w}</b><i>${(p * 100).toFixed(p < 0.1 ? 1 : 0).replace('.', ',')}%</i></span></button>`).join('')
+      + (d.ps.length > 6 ? `<p class="note">…e altre ${d.ps.length - 6} parole possibili.</p>` : '');
+  }
+  const aggiungi = w => { parole.push(w); nuove++; mostra(); };
+  function reset() { ferma(); parole = tok($('inizio').value); nuove = 0; mostra(); }
+  function ferma() { clearInterval(timer); timer = null; $('auto').textContent = 'Scrivi da solo'; }
+  $('auto').onclick = () => {
+    if (timer) return ferma();
+    $('auto').textContent = 'Fermati';
+    let k = 0;
+    timer = setInterval(() => { aggiungi(pesca(distribuzione().ps)); if (++k >= 40) ferma(); }, 160);
+  };
+  $('una').onclick = () => { ferma(); aggiungi(pesca(distribuzione().ps)); };
+  $('reset').onclick = reset;
+  $('inizio').addEventListener('change', reset);
+  $('scelte').onclick = e => { const b = e.target.closest('[data-w]'); if (b) { ferma(); aggiungi(b.dataset.w); } };
+  const etich = () => { $('no').textContent = nCtx() === 1 ? '1 parola' : `${nCtx()} parole`; $('tempo').textContent = temp().toFixed(1).replace('.', ','); };
+  $('n').oninput = () => { etich(); mostra(); }; $('temp').oninput = () => { etich(); mostra(); };
+  etich(); reset();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Note del relatore · Modulo B</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../modulo-a/comune/tema.css">
+<style>
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); }
+  main { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; padding: 22px 28px; box-sizing: border-box; gap: 14px; }
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; font-family: var(--mono); font-size: 15px; color: var(--muted); }
+  #tempo { font-size: 30px; color: var(--fg); }
+  #ora { font-size: 18px; }
+  h1 { font-family: var(--head); font-weight: 600; font-size: 34px; margin: 6px 0 12px; }
+  #note { font-size: 22px; line-height: 1.45; overflow: auto; }
+  #note p { margin: 0 0 .7em; }
+  #note b { color: var(--accent); font-weight: 600; }
+  footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+  #prossimo { color: var(--muted); font-size: 17px; }
+  #prossimo span { color: var(--fg); }
+  button { font: 600 16px var(--body); border: 0; border-radius: 10px; padding: 12px 18px; background: var(--surface); color: var(--fg); cursor: pointer; }
+  button.primario { background: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div><span id="blocco"></span> · <span id="n"></span></div>
+    <div><span id="tempo">0:00</span> &nbsp; <span id="ora"></span></div>
+  </header>
+  <section>
+    <h1 id="titolo">In attesa della lezione…</h1>
+    <div id="note">Apri questa finestra dal flusso con il tasto <b>N</b>.</div>
+  </section>
+  <footer>
+    <div id="prossimo">Dopo: <span></span></div>
+    <div><button id="crono">▶ cronometro</button> <button id="indietro">←</button> <button id="avanti" class="primario">Avanti →</button></div>
+  </footer>
+</main>
+<script>
+(() => {
+  const ch = new BroadcastChannel('flusso-modulo-b');
+  const $ = id => document.getElementById(id);
+  const manda = azione => ch.postMessage({ tipo: 'comando', azione });
+  ch.onmessage = ({ data }) => {
+    if (data.tipo !== 'stato') return;
+    $('blocco').textContent = data.blocco;
+    $('n').textContent = `${data.i + 1} / ${data.n}`;
+    $('titolo').textContent = data.titolo;
+    $('note').innerHTML = data.note || '<span style="color:var(--muted)">—</span>';
+    $('prossimo').querySelector('span').textContent = data.prossimo;
+  };
+  manda('stato');
+  $('avanti').onclick = () => manda('avanti');
+  $('indietro').onclick = () => manda('indietro');
+  addEventListener('keydown', e => {
+    if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); manda('avanti'); }
+    if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); manda('indietro'); }
+  });
+  let t0 = null, acc = 0;
+  $('crono').onclick = () => {
+    if (t0) { acc += Date.now() - t0; t0 = null; $('crono').textContent = '▶ cronometro'; }
+    else { t0 = Date.now(); $('crono').textContent = '❚❚ pausa'; }
+  };
+  setInterval(() => {
+    const ms = acc + (t0 ? Date.now() - t0 : 0), m = Math.floor(ms / 60000);
+    $('tempo').textContent = `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+    $('ora').textContent = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  }, 1000);
+})();
+</script>
+</body>
+</html>

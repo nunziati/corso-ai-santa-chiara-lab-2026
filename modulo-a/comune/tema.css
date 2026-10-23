@@ -9,6 +9,9 @@
   --pos: #2E5EAA; --neg: #E4572E; --ok: #2F8F5B;
   --head: 'Fraunces', Georgia, serif; --head-w: 600; --head-track: -0.02em;
   --body: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* palette per categorie (mappe, legende con molte classi) */
+  --cat-1: #2E5EAA; --cat-2: #E4572E; --cat-3: #2F8F5B; --cat-4: #C98A2E; --cat-5: #7A4EAB;
+  --cat-6: #D14D72; --cat-7: #3A9E9E; --cat-8: #8A6247; --cat-9: #5B7FC0; --cat-10: #1A1A1A; --cat-11: #9C9C3A;
 }
 [data-theme="tech"] {
   --bg: #FFFFFF; --surface: #F4F5FB; --fg: #0F172A; --muted: #5B6478; --line: #E2E5F0;

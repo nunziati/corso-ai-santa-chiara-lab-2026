@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La filigrana</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../modulo-a/comune/demo.css">
+<style>
+  .testo { background: var(--surface); border-radius: 12px; padding: 16px 18px; font-family: var(--head); font-size: 20px; line-height: 1.55; min-height: 200px; }
+  .testo .v { color: var(--ok); } .testo .r { color: var(--accent); }
+  .testo.colori .v { background: rgba(47, 143, 91, .12); border-radius: 3px; }
+  textarea { font: inherit; font-family: var(--head); font-size: 18px; line-height: 1.5; width: 100%; min-height: 200px; padding: 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg); color: var(--fg); }
+  .verdetto { font-family: var(--head); font-size: 24px; font-weight: 600; margin: 0; }
+  .verdetto.si { color: var(--ok); } .verdetto.no { color: var(--muted); } .verdetto.forse { color: var(--accent); }
+  .metro { position: relative; height: 18px; border-radius: 9px; background: var(--line); overflow: hidden; }
+  .metro .ago { position: absolute; inset: 0; background: var(--fg); border-radius: 9px; transform-origin: 0 50%; transition: transform .4s; }
+  .metro .soglia { position: absolute; top: -2px; bottom: -2px; border-left: 2px dashed var(--accent); }
+  .switch { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+  .switch input { width: 22px; height: 22px; accent-color: var(--accent); }
+</style>
+</head>
+<body>
+<main class="demo">
+  <header class="demo-head">
+    <div class="kicker">Demo · Testi generati</div>
+    <h1>La filigrana</h1>
+    <p>Chi genera il testo divide le parole in «verdi» e «rosse» con una chiave segreta, e sceglie un po' più spesso le verdi. A occhio non si vede niente. Chi ha la chiave conta le verdi: troppe, per essere un caso.</p>
+  </header>
+
+  <section class="stage" style="background:transparent">
+    <div class="testo" id="testo"></div>
+    <textarea id="modifica" hidden></textarea>
+  </section>
+
+  <section class="panel">
+    <div class="buttons">
+      <button class="primary" id="con">Genera con filigrana</button>
+      <button id="senza">Genera senza</button>
+      <button id="vero">Brano vero del libro</button>
+    </div>
+    <div class="control">
+      <label for="delta"><span>Forza della filigrana</span> <output id="deltao"></output></label>
+      <input type="range" id="delta" min="0.5" max="5" step="0.5" value="2.5">
+    </div>
+
+    <div class="stat" style="display:grid;gap:8px">
+      <div class="t">il rilevatore (ha la chiave)</div>
+      <p class="verdetto" id="verdetto">—</p>
+      <div class="metro"><div class="ago" id="ago"></div><div class="soglia" style="left:66%"></div></div>
+      <div class="note" id="conti"></div>
+    </div>
+
+    <label class="switch"><input type="checkbox" id="colori"> Mostra i colori (solo chi ha la chiave li vede)</label>
+    <div class="buttons">
+      <button id="riscrivi">Cambia il 30% delle parole</button>
+      <button id="edita">Modifica il testo a mano</button>
+    </div>
+    <p class="note">Il modello è lo stesso del <a href="completatore.html">completatore</a>, addestrato su <i>Pinocchio</i>. Quando c'è una sola parola possibile, la filigrana non può fare niente: serve un po' di scelta. Più si riscrive il testo, più la filigrana sparisce. Idea: Kirchenbauer e colleghi (2023); Google la usa nei suoi modelli (SynthID Text, 2024).</p>
+    <a class="back" href="./">← tutte le demo</a>
+  </section>
+</main>
+
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  const libro = await (await fetch('dati/pinocchio.txt')).text();
+  const tok = s => s.toLowerCase().replace(/[—–]/g, ' — ').match(/[a-zàèéìòùç]+'?|[.,;:!?—]/g) || [];
+  const T = tok(libro);
+  const tab = [null, new Map(), new Map()];
+  for (let i = 0; i < T.length - 1; i++) for (let n = 1; n <= 2 && i - n + 1 >= 0; n++) {
+    const c = T.slice(i - n + 1, i + 1).join(' ');
+    let m = tab[n].get(c); if (!m) tab[n].set(c, m = new Map());
+    m.set(T[i + 1], (m.get(T[i + 1]) || 0) + 1);
+  }
+  const PAROLE = [...new Set(T.filter(w => /[a-z]/.test(w)))];
+  // nomi propri: parole che nel libro, a metà frase, sono quasi sempre maiuscole
+  const NOMI = (() => {
+    const c = new Map(); let prec = '.';
+    for (const m of libro.matchAll(/[A-Za-zÀ-ÿ]+'?|[.,;:!?—]/g)) {
+      const w = m[0], low = w.toLowerCase();
+      if (/[a-zà-ÿ]/i.test(w[0]) && !/[.!?—]/.test(prec)) { const v = c.get(low) || [0, 0]; v[w[0] === w[0].toUpperCase() ? 0 : 1]++; c.set(low, v); }
+      prec = w;
+    }
+    return new Set([...c].filter(([, [M, m]]) => M >= 3 && M > 4 * m).map(([w]) => w));
+  })();
+  const cap = w => w[0].toUpperCase() + w.slice(1);
+  // la "chiave": una parola è verde se l'hash di (chiave, parola precedente, parola) è pari
+  const CHIAVE = 'santa-chiara-2026';
+  const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const verde = (prec, w) => (hash(CHIAVE + '\u0001' + prec + '\u0001' + w) & 1) === 0;
+
+  let parole = [];
+  function genera(conFiligrana) {
+    const delta = +$('delta').value;
+    const out = ['c\'', 'era', 'una', 'volta'];
+    while (out.length < 70) {
+      let m = tab[2].get(out.slice(-2).join(' '));
+      if (!m || m.size < 4) m = tab[1].get(out[out.length - 1]) || m;
+      const vs = [...m.entries()].map(([w, c]) => [w, c * (conFiligrana && verde(out[out.length - 1], w) ? Math.exp(delta) : 1)]);
+      let r = Math.random() * vs.reduce((a, b) => a + b[1], 0);
+      let scelta = vs[0][0];
+      for (const [w, p] of vs) { if ((r -= p) <= 0) { scelta = w; break; } }
+      out.push(scelta);
+    }
+    return out;
+  }
+  function brano() { const i = Math.floor(Math.random() * (T.length - 80)); return T.slice(i, i + 70); }
+
+  function rileva(ws) {
+    let g = 0, n = 0;
+    for (let i = 1; i < ws.length; i++) { n++; if (verde(ws[i - 1], ws[i])) g++; }
+    const zz = n ? (g - 0.5 * n) / Math.sqrt(0.25 * n) : 0;
+    return { g, n, z: zz };
+  }
+  function mostra() {
+    const colori = $('colori').checked;
+    let html = '', maiusc = true;
+    parole.forEach((w, i) => {
+      let t = (maiusc || NOMI.has(w)) && /[a-zà-ÿ]/.test(w[0]) ? cap(w) : w;
+      if (/^[a-zàèéìòù]/.test(w)) maiusc = false;
+      if (/[.!?]/.test(w)) maiusc = true;
+      const sp = i === 0 || /^[.,;:!?]$/.test(w) || /'$/.test(parole[i - 1]) ? '' : ' ';
+      const cl = colori && i > 0 ? (verde(parole[i - 1], w) ? 'v' : 'r') : '';
+      html += sp + `<span class="${cl}">${t}</span>`;
+    });
+    $('testo').innerHTML = html;
+    $('testo').classList.toggle('colori', colori);
+    const { g, n, z } = rileva(parole);
+    $('conti').innerHTML = `Verdi: <b>${g}</b> su ${n} (in un testo qualsiasi ci si aspetta circa la metà, ${Math.round(n / 2)}). Punteggio z = <b>${z.toFixed(1).replace('.', ',')}</b>; la soglia è 4.`;
+    $('ago').style.transform = `scaleX(${Math.max(0.02, Math.min(1, (z + 2) / 9))})`;
+    const v = $('verdetto');
+    if (z >= 4) { v.className = 'verdetto si'; v.textContent = 'Filigrana trovata: testo generato'; }
+    else if (z >= 2) { v.className = 'verdetto forse'; v.textContent = 'Qualche indizio, ma non basta'; }
+    else { v.className = 'verdetto no'; v.textContent = 'Nessuna filigrana'; }
+  }
+  const imposta = ws => { parole = ws; $('modifica').hidden = true; $('testo').hidden = false; $('edita').textContent = 'Modifica il testo a mano'; mostra(); };
+  $('con').onclick = () => imposta(genera(true));
+  $('senza').onclick = () => imposta(genera(false));
+  $('vero').onclick = () => imposta(brano());
+  $('colori').onchange = mostra;
+  $('riscrivi').onclick = () => {
+    parole = parole.map((w, i) => i > 0 && /[a-z]/.test(w) && Math.random() < 0.3 ? PAROLE[Math.floor(Math.random() * PAROLE.length)] : w);
+    mostra();
+  };
+  $('edita').onclick = () => {
+    const ta = $('modifica');
+    if (ta.hidden) { ta.value = $('testo').textContent; ta.hidden = false; $('testo').hidden = true; $('edita').textContent = 'Fatto: controlla'; ta.focus(); }
+    else imposta(tok(ta.value));
+  };
+  $('modifica').addEventListener('input', () => { const r = rileva(tok($('modifica').value)); $('conti').textContent = `Verdi: ${r.g} su ${r.n} · z = ${r.z.toFixed(1).replace('.', ',')}`; });
+  const et = () => { $('deltao').textContent = (+$('delta').value).toFixed(1).replace('.', ','); };
+  $('delta').oninput = et; et();
+  imposta(genera(true));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+GSAP 3.15.0 (GreenSock). Licenza: "Standard no charge license", https://gsap.com/standard-license
+Copiato da npm (pacchetto gsap@3.15.0, cartella dist).
